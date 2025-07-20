@@ -30,34 +30,39 @@ void sprites_init(sprite_sheet_t* sheet, state_t* state, const char* path,
   sheet->sprite_width = sprite_width;
   sheet->sprite_height = sprite_height;
   sheet->batch = dynlist_create(sprite_t);
-  sheet->scale = 10;
+
+  int chars_per_line = 16;
+  int lines = 9;
+  int scale_x = SCREEN_WIDTH / (chars_per_line * sprite_width);
+  int scale_y = SCREEN_HEIGHT / (lines * sprite_height);
+  sheet->scale = min(scale_x, scale_y);
 }
 
-void font_ch(sprite_sheet_t* font_sheet, char ch, iv2* pos) {
-  iv2 texture_src = find_char(ch);
-  *dynlist_append(font_sheet->batch) =
-      (sprite_t){texture_src.x, texture_src.y, pos->x, pos->y};
+void font_ch(sprite_sheet_t* font_sheet, char ch, iv2* dst) {
+  iv2 idx = find_char(ch);
+  *dynlist_append(font_sheet->batch) = (sprite_t){idx.x, idx.y, dst->x, dst->y};
 }
 
-void font_str(sprite_sheet_t* font_sheet, const char* str, iv2* pos) {
-  int starting_x = pos->x;
-  int starting_y = pos->y;
+void font_str(sprite_sheet_t* font_sheet, const char* str, iv2* dst) {
+  int starting_x = dst->x;
+  int starting_y = dst->y;
+  int scale = font_sheet->scale;
 
   const char* p = str;
   while (*p) {
     if (*p == '\n') {
-      pos->y += 8 * font_sheet->scale;
-      pos->x = starting_x;
+      dst->y += 8 * scale;
+      dst->x = starting_x;
     } else {
-      font_ch(font_sheet, *p, pos);
-      pos->x += 9 * font_sheet->scale;
+      font_ch(font_sheet, *p, dst);
+      dst->x += 9 * scale;
     }
 
     ++p;
   }
 
-  pos->x = starting_x;
-  pos->y = starting_y;
+  dst->x = starting_x;
+  dst->y = starting_y;
 }
 
 void load_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {

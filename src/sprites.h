@@ -21,8 +21,8 @@ typedef struct {
 void sprites_init(sprite_sheet_t* sheet, state_t* state, const char* path,
                   int sprite_width, int sprite_height);
 
-void font_ch(sprite_sheet_t* font_sheet, char ch, iv2* pos);
-void font_str(sprite_sheet_t* font_sheet, const char* str, iv2* pos);
+void font_ch(sprite_sheet_t* font_sheet, char ch, iv2* dst_idx);
+void font_str(sprite_sheet_t* font_sheet, const char* str, iv2* dst_idx);
 
 void load_batch(state_t* state, sprite_sheet_t* sheet, bool clr);
 
