@@ -1,115 +1,42 @@
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-#include <math.h>
-#include <stdio.h>
+#include "c-lib/time.h"
+#include "img.h"
+#include "sprites.h"
+#include "state.h"
 
-#include "../include/glad/gl.h"
-
-#define _exit_failure(_msg)                     \
-  fprintf(stderr, "Runtime failure: %s", _msg); \
-  return 1;
-
-const char* vertexShaderSource =
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main() { gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0); }";
-const char* fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main() { FragColor = vec4(0.8f, 0.3f, 0.02f, 1.0f); }";
+state_t state;
 
 int main() {
-  GLFWwindow* window;
+  initialize_state(&state, "window");
+  sprites_init(&state.font_sheet, &state, "res/font.png", 8, 8);
 
-  if (!glfwInit()) {
-    _exit_failure("glfwInit");
+  state.quit = false;
+  SDL_Event ev;
+
+  const char* msg =
+      "abcdefghijklmnopqrstuvwxyz"
+      "\nABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "\n0123456789"
+      "\n!@#$%^&*()_+="
+      "\n,./<>?;':\"[]";
+
+  while (!state.quit) {
+    while (SDL_PollEvent(&ev)) {
+      switch (ev.type) {
+        case SDL_QUIT: state.quit = true; break;
+      }
+    }
+
+    int t = 100 + (int)(cosf(time_s()) * 100);
+    iv2 c_pos = {.x = t, .y = t};
+    iv2 s_pos = {.x = t, .y = t + 9 * state.font_sheet.scale};
+
+    font_ch(&state.font_sheet, 'A', &c_pos);
+    font_str(&state.font_sheet, msg, &s_pos);
+    load_batch(&state, &state.font_sheet, true);
   }
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  // core profile for more modern functions
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  window = glfwCreateWindow(800, 800, "window", NULL, NULL);
-
-  if (!window) {
-    glfwTerminate();
-    _exit_failure("glfwCreateWindow");
-  }
-
-  glfwMakeContextCurrent(window);
-
-  if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
-    _exit_failure("GladLoadFunc");
-  }
-
-  // maps normalized coords (NDC, -1 to 1) to frame buffer (pixel) coords
-  int fbWidth, fbHeight;
-  glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-  glViewport(0, 0, fbWidth, fbHeight);
-
-  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  // null is for source string length, but ours are null-terminated
-  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-  glCompileShader(vertexShader);
-
-  GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-  glCompileShader(fragmentShader);
-
-  GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-  glLinkProgram(shaderProgram);
-
-  // now they are in the program memory so we can clear them
-  glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);
-
-  GLfloat vertices[] = {-0.5f,     -0.5f * (float)(sqrt(3)) / 3,    0.0f,
-                        0.5f,      -0.5f * (float)(sqrt(3)) / 3,    0.0f,
-                        0.0f,      0.5f * (float)(sqrt(3)) * 2 / 3, 0.0f,
-                        -0.5f / 2, 0.5f * (float)(sqrt(3)) / 6,     0.0f,
-                        0.5f / 2,  0.5f * (float)(sqrt(3)) / 6,     0.0f,
-                        0.0f,      -0.5f * (float)(sqrt(3)) / 3,    0.0f};
-  GLuint indices[] = {0, 3, 5, 3, 2, 4, 5, 4, 1};
-
-  GLuint VAO, VBO, EBO;
-  glGenVertexArrays(1, &VAO); // generate VAO before VBO
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-
-  glBindVertexArray(VAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-               GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-  while (!glfwWindowShouldClose(window)) {
-    glClearColor(0.2f, 0.2f, 0.2f, 0.0f); // set to gray
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(shaderProgram);
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
-    glfwSwapBuffers(window);
-
-    glfwPollEvents();
-  }
-
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
-  glDeleteBuffers(1, &EBO);
-  glDeleteProgram(shaderProgram);
-
-  glfwTerminate();
-  return 0;
+  destroy_img(&state.font_sheet.img);
+  SDL_DestroyRenderer(state.renderer);
+  SDL_DestroyWindow(state.window);
+  SDL_Quit();
 }

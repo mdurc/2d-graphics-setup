@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
-LDFLAGS = -lglfw
+CFLAGS = -Wall -Wextra -g -I/Users/mdurcan/personal/git_projects/tools/my-libraries
+LDFLAGS = `sdl2-config --cflags --libs`
 PROGRAM = a.out
 
 SRC_DIR = ./src
