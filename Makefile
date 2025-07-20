@@ -12,6 +12,7 @@ all: $(PROGRAM)
 
 $(PROGRAM): $(OBJ_LIST)
 	$(CC) $(CFLAGS) $(OBJ_LIST) -o $(PROGRAM) $(LDFLAGS)
+	cp -R ~/personal/git_projects/tools/my-libraries/c-lib src
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(BUILD_DIR)
