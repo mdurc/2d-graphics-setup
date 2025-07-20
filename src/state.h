@@ -14,6 +14,7 @@ typedef struct state {
   SDL_Window* window;
   SDL_Renderer* renderer;
   sprite_sheet_t font_sheet;
+  sprite_sheet_t bg_sheet;
   bool quit;
 } state_t;
 
