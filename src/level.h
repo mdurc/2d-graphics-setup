@@ -3,6 +3,7 @@
 
 #include "sprites.h"
 
+#define MAX_LEVELS 5
 #define MAX_ROOMS 5
 #define MAX_ROOM_WIDTH  16
 #define MAX_ROOM_HEIGHT 16
@@ -28,4 +29,7 @@ void build_levels();
 void set_level(state_t* state, int n);
 void render_level(state_t* state);
 void push_level(state_t* state);
+
+void destroy_levels(state_t* state);
+
 #endif

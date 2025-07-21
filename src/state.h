@@ -19,7 +19,8 @@ typedef struct state { // for forward declaration
   sprite_sheet_t font_sheet;
   sprite_sheet_t bg_sheet;
 
-  level_t* current_level;
+  int current_level, loaded_levels;
+  level_t* levels[MAX_LEVELS];
 } state_t;
 
 void initialize_state(state_t* state, const char* window_name);

@@ -12,7 +12,7 @@ int main() {
   sprites_init(&state.bg_sheet, &state, "res/bg.png", 8, 8, 4.0f);
 
   build_levels();
-  set_level(&state, 1);
+  set_level(&state, 0);
 
   state.quit = false;
   SDL_Event ev;
@@ -32,6 +32,12 @@ int main() {
     }
 
     float t = 10.0f + (cosf(time_s()) * 10.0f);
+
+    if ((t > 10.0f && state.current_level == 0) ||
+        (t < 10.0f && state.current_level == 1)) {
+      set_level(&state, state.current_level == 0 ? 1 : 0);
+    }
+
     fv2 a_pos = {.x = t, .y = t};
     fv2 b_pos = {.x = t, .y = a_pos.y + 8.0f};
 
@@ -48,6 +54,7 @@ int main() {
     SDL_RenderPresent(state.renderer);
   }
 
+  destroy_levels(&state);
   destroy_sheet(&state.font_sheet);
   destroy_sheet(&state.bg_sheet);
   SDL_DestroyRenderer(state.renderer);

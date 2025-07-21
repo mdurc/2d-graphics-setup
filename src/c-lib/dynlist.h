@@ -248,7 +248,7 @@ static M_UNUSED void* _dynlist_insert_impl(void** plist, int index) {
     h = dynlist_header(*plist);
   }
 
-  uint8_t* data = (uint8_t*)(*plist);
+  u8* data = (u8*)(*plist);
   if (index < h->size) {
     memmove(data + (index + 1) * h->t_size, data + index * h->t_size,
             (h->size - index) * h->t_size);
@@ -314,10 +314,10 @@ static M_UNUSED void _dynlist_sort_impl(void** plist, dynlist_cmp_func cmp) {
   // bubble sort for small lists
   for (int i = 0; i < h->size - 1; i++) {
     for (int j = 0; j < h->size - i - 1; j++) {
-      uint8_t* a = (uint8_t*)(*plist) + j * h->t_size;
-      uint8_t* b = a + h->t_size;
+      u8* a = (u8*)(*plist) + j * h->t_size;
+      u8* b = a + h->t_size;
       if (cmp(a, b) > 0) {
-        uint8_t tmp[h->t_size];
+        u8 tmp[h->t_size];
         memcpy(tmp, a, h->t_size);
         memcpy(a, b, h->t_size);
         memcpy(b, tmp, h->t_size);
@@ -333,7 +333,7 @@ static M_UNUSED void* _dynlist_insert_sorted_impl(void** plist,
 
   dynlist_header_t* h = dynlist_header(*plist);
   int low = 0, high = h->size;
-  uint8_t* data = (uint8_t*)(*plist);
+  u8* data = (u8*)(*plist);
 
   // binary search for insertion point
   while (low < high) {
