@@ -25,15 +25,12 @@ static iv2 find_char(char ch) {
 }
 
 void sprites_init(sprite_sheet_t* sheet, state_t* state, const char* path,
-                  int sprite_width, int sprite_height) {
+                  int sprite_width, int sprite_height, f32 scale) {
   load_img(&sheet->img, state, path);
   sheet->sprite_width = sprite_width;
   sheet->sprite_height = sprite_height;
   sheet->batch = dynlist_create(sprite_t);
-
-  f32 scale_x = SCREEN_WIDTH / (16.0f * sprite_width);
-  f32 scale_y = SCREEN_HEIGHT / (9.0f * sprite_height);
-  sheet->scale = min(scale_x, scale_y);
+  sheet->scale = scale;
 }
 
 void font_ch(sprite_sheet_t* font_sheet, char ch, fv2 dst_px_pos) {
@@ -67,7 +64,9 @@ void add_sprite(sprite_sheet_t* sheet, iv2 src_idx, fv2 dst_px_pos) {
 void load_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {
   int bw = sheet->sprite_width;
   int bh = sheet->sprite_height;
+
   f32 scale = sheet->scale;
+
   dynlist_each(sheet->batch, sprite) {
     SDL_Rect src = {.x = sprite->src_idx_x * bw,
                     .y = sprite->src_idx_y * bh,
@@ -79,6 +78,7 @@ void load_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {
                            .h = (int)(bh * scale)};
     SDL_RenderCopy(state->renderer, sheet->img.texture, &src, &dst_px_pos);
   }
+
   if (clr) {
     dynlist_clear(sheet->batch);
   }

@@ -8,8 +8,8 @@ state_t state;
 
 int main() {
   initialize_state(&state, "window");
-  sprites_init(&state.font_sheet, &state, "res/font.png", 8, 8);
-  sprites_init(&state.bg_sheet, &state, "res/bg.png", 8, 8);
+  sprites_init(&state.font_sheet, &state, "res/font.png", 8, 8, 5.0f);
+  sprites_init(&state.bg_sheet, &state, "res/bg.png", 8, 8, 1.0f);
 
   state.quit = false;
   SDL_Event ev;
@@ -20,8 +20,6 @@ int main() {
       "\n0123456789"
       "\n!@#$%^&*()_+="
       "\n,./<>?;':\"[]";
-
-  iv2* coords = generate_coords(16, 16);
 
   while (!state.quit) {
     while (SDL_PollEvent(&ev)) {
@@ -36,7 +34,7 @@ int main() {
 
     font_ch(&state.font_sheet, 'A', a_pos);
     font_str(&state.font_sheet, msg, b_pos);
-    add_background(&state.bg_sheet, coords, 256);
+    add_background(&state.bg_sheet);
 
     SDL_SetRenderDrawColor(state.renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(state.renderer);
@@ -45,7 +43,6 @@ int main() {
     SDL_RenderPresent(state.renderer);
   }
 
-  free(coords);
   destroy_sheet(&state.font_sheet);
   destroy_sheet(&state.bg_sheet);
   SDL_DestroyRenderer(state.renderer);

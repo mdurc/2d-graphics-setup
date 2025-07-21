@@ -16,4 +16,8 @@ void initialize_state(state_t* state, const char* window_name) {
       state->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   ASSERT(state->renderer, "failed to create sdl renderer: %s\n",
          SDL_GetError());
+
+  // the HIGHDPI setting makes the framebuffer 2x as large, this allows for
+  // easier rendering while keeping higher output resolution
+  SDL_RenderSetLogicalSize(state->renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
