@@ -33,11 +33,13 @@ void sprites_init(sprite_sheet_t* sheet, state_t* state, const char* path,
   sheet->scale = scale;
 }
 
-void font_ch(sprite_sheet_t* font_sheet, char ch, fv2 dst_px_pos) {
-  add_sprite(font_sheet, find_char(ch), dst_px_pos);
+void push_font_ch(sprite_sheet_t* font_sheet, char ch, fv2 dst_px_pos) {
+  *dynlist_append(font_sheet->batch) =
+      (sprite_t){.src_idx = find_char(ch), .dst_px = dst_px_pos};
 }
 
-void font_str(sprite_sheet_t* font_sheet, const char* str, fv2 dst_px_pos) {
+void push_font_str(sprite_sheet_t* font_sheet, const char* str,
+                   fv2 dst_px_pos) {
   f32 starting_x = dst_px_pos.x;
 
   const char* p = str;
@@ -46,7 +48,7 @@ void font_str(sprite_sheet_t* font_sheet, const char* str, fv2 dst_px_pos) {
       dst_px_pos.y += 8.0f;
       dst_px_pos.x = starting_x;
     } else {
-      font_ch(font_sheet, *p, dst_px_pos);
+      push_font_ch(font_sheet, *p, dst_px_pos);
       dst_px_pos.x += 9.0f;
     }
 
@@ -54,26 +56,20 @@ void font_str(sprite_sheet_t* font_sheet, const char* str, fv2 dst_px_pos) {
   }
 }
 
-void add_sprite(sprite_sheet_t* sheet, iv2 src_idx, fv2 dst_px_pos) {
-  *dynlist_append(sheet->batch) = (sprite_t){.src_idx_x = src_idx.x,
-                                             .src_idx_y = src_idx.y,
-                                             .dst_px_x = dst_px_pos.x,
-                                             .dst_px_y = dst_px_pos.y};
-}
-
-void load_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {
+void render_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {
+  ASSERT(state && sheet && sheet->batch);
   int bw = sheet->sprite_width;
   int bh = sheet->sprite_height;
 
   f32 scale = sheet->scale;
 
   dynlist_each(sheet->batch, sprite) {
-    SDL_Rect src = {.x = sprite->src_idx_x * bw,
-                    .y = sprite->src_idx_y * bh,
+    SDL_Rect src = {.x = sprite->src_idx.x * bw,
+                    .y = sprite->src_idx.y * bh,
                     .w = bw,
                     .h = bh};
-    SDL_Rect dst_px_pos = {.x = (int)(sprite->dst_px_x * scale),
-                           .y = (int)(sprite->dst_px_y * scale),
+    SDL_Rect dst_px_pos = {.x = (int)(sprite->dst_px.x * scale),
+                           .y = (int)(sprite->dst_px.y * scale),
                            .w = (int)(bw * scale),
                            .h = (int)(bh * scale)};
     SDL_RenderCopy(state->renderer, sheet->img.texture, &src, &dst_px_pos);

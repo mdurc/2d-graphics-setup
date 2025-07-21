@@ -8,8 +8,11 @@ state_t state;
 
 int main() {
   initialize_state(&state, "window");
-  sprites_init(&state.font_sheet, &state, "res/font.png", 8, 8, 5.0f);
-  sprites_init(&state.bg_sheet, &state, "res/bg.png", 8, 8, 1.0f);
+  sprites_init(&state.font_sheet, &state, "res/font.png", 8, 8, 3.0f);
+  sprites_init(&state.bg_sheet, &state, "res/bg.png", 8, 8, 4.0f);
+
+  build_levels();
+  set_level(&state, 1);
 
   state.quit = false;
   SDL_Event ev;
@@ -32,14 +35,16 @@ int main() {
     fv2 a_pos = {.x = t, .y = t};
     fv2 b_pos = {.x = t, .y = a_pos.y + 8.0f};
 
-    font_ch(&state.font_sheet, 'A', a_pos);
-    font_str(&state.font_sheet, msg, b_pos);
-    add_background(&state.bg_sheet);
+    push_font_ch(&state.font_sheet, 'A', a_pos);
+    push_font_str(&state.font_sheet, msg, b_pos);
+    push_background(&state.bg_sheet);
+    push_level(&state);
 
     SDL_SetRenderDrawColor(state.renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(state.renderer);
-    load_batch(&state, &state.bg_sheet, true);
-    load_batch(&state, &state.font_sheet, true);
+    render_level(&state);
+    render_batch(&state, &state.bg_sheet, true);
+    render_batch(&state, &state.font_sheet, true);
     SDL_RenderPresent(state.renderer);
   }
 

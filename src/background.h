@@ -3,6 +3,6 @@
 
 #include "sprites.h"
 
-void add_background(sprite_sheet_t* bg_sheet);
+void push_background(sprite_sheet_t* bg_sheet);
 
 #endif
