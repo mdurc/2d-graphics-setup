@@ -13,7 +13,8 @@ void push_background(sprite_sheet_t* bg_sheet) {
       *dynlist_append(bg_sheet->batch) =
           (sprite_t){.src_idx = (iv2){x % 2 + y % 2, 0},
                      .dst_px = (fv2){x * bg_sheet->sprite_width,
-                                     y * bg_sheet->sprite_height}};
+                                     y * bg_sheet->sprite_height},
+                     .rotation = 0};
     }
   }
 }

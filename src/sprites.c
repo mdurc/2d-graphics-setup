@@ -35,7 +35,7 @@ void sprites_init(sprite_sheet_t* sheet, state_t* state, const char* path,
 
 void push_font_ch(sprite_sheet_t* font_sheet, char ch, fv2 dst_px_pos) {
   *dynlist_append(font_sheet->batch) =
-      (sprite_t){.src_idx = find_char(ch), .dst_px = dst_px_pos};
+      (sprite_t){.src_idx = find_char(ch), .dst_px = dst_px_pos, .rotation = 0};
 }
 
 void push_font_str(sprite_sheet_t* font_sheet, const char* str,
@@ -60,7 +60,6 @@ void render_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {
   ASSERT(state && sheet && sheet->batch);
   int bw = sheet->sprite_width;
   int bh = sheet->sprite_height;
-
   f32 scale = sheet->scale;
 
   dynlist_each(sheet->batch, sprite) {
@@ -72,7 +71,8 @@ void render_batch(state_t* state, sprite_sheet_t* sheet, bool clr) {
                            .y = (int)(sprite->dst_px.y * scale),
                            .w = (int)(bw * scale),
                            .h = (int)(bh * scale)};
-    SDL_RenderCopy(state->renderer, sheet->img.texture, &src, &dst_px_pos);
+    SDL_RenderCopyEx(state->renderer, sheet->img.texture, &src, &dst_px_pos,
+                     sprite->rotation, NULL, SDL_FLIP_NONE);
   }
 
   if (clr) {

@@ -8,8 +8,9 @@
 #include "img.h"
 
 typedef struct {
-  iv2 src_idx; // 2d index position in the sprite sheet texture
-  fv2 dst_px;  // target position in the game window
+  iv2 src_idx;  // 2d index position in the sprite sheet texture
+  fv2 dst_px;   // target position in the game window
+  f32 rotation; // 0, 90, 180, 270
 } sprite_t;
 
 typedef struct {

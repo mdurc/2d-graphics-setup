@@ -69,7 +69,7 @@ void render_level(state_t* state) {
          state->levels[state->current_level]);
   level_t* level = state->levels[state->current_level];
   for (int i = 0; level && i < level->room_count; ++i) {
-    render_batch(state, &level->rooms[i]->tile_sheet, true);
+    render_batch(state, &level->rooms[i]->tile_sheet, false);
   }
 }
 
@@ -93,6 +93,9 @@ void push_level(state_t* state) {
 
   for (int i = 0; i < level->room_count; ++i) {
     room_t* room = level->rooms[i];
+    if (dynlist_size(room->tile_sheet.batch) > 0) {
+      continue;
+    }
     int sprite_sheet_width =
         room->tile_sheet.img.width / room->tile_sheet.sprite_width;
     for (int r_x = 0; r_x < room->w; ++r_x) {
@@ -104,7 +107,8 @@ void push_level(state_t* state) {
         *dynlist_append(room->tile_sheet.batch) = (sprite_t){
             .src_idx = (iv2){src_x, src_y},
             .dst_px = (fv2){(room->x + r_x) * room->tile_sheet.sprite_width,
-                            (room->y + r_y) * room->tile_sheet.sprite_height}};
+                            (room->y + r_y) * room->tile_sheet.sprite_height},
+            .rotation = (rand() % 4) * 90.0f};
       }
     }
   }
