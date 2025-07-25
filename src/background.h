@@ -1,8 +1,5 @@
-#ifndef BACKGROUND_H
-#define BACKGROUND_H
+#pragma once
 
-#include "sprites.h"
+#include "sprite_sheet/sprite_sheet.h"
 
-void push_background(sprite_sheet_t* bg_sheet);
-
-#endif
+void push_background(sprite_t** batch, sprite_sheet_t* bg_sheet);

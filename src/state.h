@@ -1,12 +1,10 @@
-#ifndef STATE_H
-#define STATE_H
+#pragma once
 
 #include <SDL2/SDL.h>
 
-#include "c-lib/types.h"
-#include "img.h"
 #include "level.h"
-#include "sprites.h"
+#include "sprite_sheet/img.h"
+#include "sprite_sheet/sprite_sheet.h"
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
@@ -23,6 +21,7 @@ typedef struct state { // for forward declaration
   level_t* levels[MAX_LEVELS];
 } state_t;
 
-void initialize_state(state_t* state, const char* window_name);
+void state_init(void);
+void state_destroy(void);
 
-#endif
+extern state_t state;

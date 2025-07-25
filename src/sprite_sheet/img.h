@@ -1,9 +1,8 @@
-#ifndef IMG_H
-#define IMG_H
+#pragma once
 
 #include <SDL2/SDL.h>
 
-#include "c-lib/types.h"
+#include "../c-lib/types.h"
 
 typedef struct state state_t;
 
@@ -13,7 +12,5 @@ typedef struct {
   SDL_Texture* texture;
 } img_t;
 
-void load_img(img_t* img, state_t* state, const char* path);
+void load_img(img_t* img, const char* path);
 void destroy_img(img_t* img);
-
-#endif

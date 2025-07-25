@@ -1,7 +1,6 @@
-#ifndef LEVEL_H
-#define LEVEL_H
+#pragma once
 
-#include "sprites.h"
+#include "sprite_sheet/sprite_sheet.h"
 
 #define MAX_LEVELS 5
 #define MAX_ROOMS 5
@@ -25,11 +24,7 @@ typedef struct level {
   room_t* rooms[MAX_ROOMS];
 } level_t;
 
-void build_levels(void);
-void set_level(state_t* state, int n);
-void render_level(state_t* state);
-void push_level(state_t* state);
-
-void destroy_levels(state_t* state);
-
-#endif
+void level_init_all(void);
+void level_set_current(int id);
+void push_level(sprite_t** batch, level_t* level);
+void level_destroy(level_t* level);
