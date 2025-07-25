@@ -6,7 +6,7 @@
 
 state_t state;
 
-int main() {
+int main(void) {
   initialize_state(&state, "window");
   sprites_init(&state.font_sheet, &state, "res/font.png", 8, 8, 3.0f);
   sprites_init(&state.bg_sheet, &state, "res/bg.png", 8, 8, 4.0f);

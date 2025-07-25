@@ -11,7 +11,10 @@
 
 static u64 time_start = 0, time_freq = 0;
 
-M_INLINE u64 time_ns() {
+M_INLINE f64 time_s(void);
+M_INLINE u64 time_ns(void);
+
+M_INLINE u64 time_ns(void) {
   const u64 now = SDL_GetPerformanceCounter();
 
   if (!time_start) {
@@ -26,6 +29,6 @@ M_INLINE u64 time_ns() {
   return (diff / (f64)time_freq) * 1000000000.0;
 }
 
-M_INLINE f64 time_s() { return time_ns() / 1000000000.0; }
+M_INLINE f64 time_s(void) { return time_ns() / 1000000000.0; }
 
 #endif

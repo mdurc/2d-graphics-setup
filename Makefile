@@ -1,24 +1,42 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -g -I/Users/mdurcan/personal/git_projects/tools/my-libraries
-LDFLAGS = `sdl2-config --cflags --libs`
-PROGRAM = a.out
+CC 				:= gcc
+PROGRAM 	:= a.out
 
-SRC_DIR = ./src
-BUILD_DIR = ./build
-SRC_LIST = $(wildcard $(SRC_DIR)/*.c)
-OBJ_LIST = $(SRC_LIST:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+SRC_DIR 	:= src
+BIN_DIR 	:= bin
+LIB_DIR 	:= lib
+
+WARNINGS 	:= -Wall -Wextra -Wshadow -Wstrict-prototypes
+WARNINGS 	+= -Wfloat-equal -Wmissing-declarations -Wmissing-include-dirs
+WARNINGS 	+= -Wmissing-prototypes -Wredundant-decls -Wunreachable-code
+CFLAGS 		:= $(WARNINGS) -g -MMD -MP `sdl2-config --cflags`
+
+INCFLAGS 	:= $(addprefix -I,$(LIB_DIR))
+LDFLAGS 	:= `sdl2-config --libs` -lm -lglfw
+
+SRC_FILES := $(shell find $(SRC_DIR) $(LIB_DIR) -name '*.c')
+OBJ_FILES := $(patsubst $(LIB_DIR)/%.c,$(BIN_DIR)/%.o, \
+              $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/%.o,$(SRC_FILES)))
+DEP_FILES := $(patsubst %.o,%.d,$(OBJ_FILES))
 
 all: $(PROGRAM)
 
-$(PROGRAM): $(OBJ_LIST)
-	$(CC) $(CFLAGS) $(OBJ_LIST) -o $(PROGRAM) $(LDFLAGS)
-	cp -R ~/personal/git_projects/tools/my-libraries/c-lib src
+$(PROGRAM): $(OBJ_FILES)
+	$(CC) $(OBJ_FILES) -o $(PROGRAM) $(LDFLAGS)
+	cp -R /Users/mdurcan/personal/git_projects/tools/my-libraries/c-lib src/
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BIN_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCFLAGS) -c $< -o $@
+
+$(BIN_DIR)/%.o: $(LIB_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR) $(PROGRAM)
+	rm -rf $(BIN_DIR) $(PROGRAM)
 
-.PHONY: all clean
+rebuild: clean all
+
+-include $(DEP_FILES)
+
+.PHONY: all clean rebuild

@@ -25,7 +25,7 @@ typedef struct level {
   room_t* rooms[MAX_ROOMS];
 } level_t;
 
-void build_levels();
+void build_levels(void);
 void set_level(state_t* state, int n);
 void render_level(state_t* state);
 void push_level(state_t* state);

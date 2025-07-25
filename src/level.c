@@ -5,7 +5,7 @@
 static room_t room_template, room1;
 static level_t level_template, level1;
 
-void build_levels() {
+void build_levels(void) {
   room_template = (room_t){.id = 0,
                            .x = 5,
                            .y = 5,
