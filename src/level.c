@@ -45,7 +45,7 @@ void level_init_all(void) {
 }
 
 void level_set_current(int id) {
-  ASSERT(id < MAX_LEVELS && id <= state.loaded_levels);
+  // ASSERT(id < MAX_LEVELS && id <= state.loaded_levels);
   level_t* level = NULL;
 
   switch (id) {
@@ -54,22 +54,23 @@ void level_set_current(int id) {
     default: ERROR_EXIT("invalid level number"); break;
   }
 
-  if (id < state.loaded_levels) {
-    // no need to re-allocate the sprite sheet for that level
-    state.current_level = id;
-    return;
-  }
+  // if (id < state.loaded_levels) {
+  //   // no need to re-allocate the sprite sheet for that level
+  //   state.current_level = id;
+  //   return;
+  // }
 
   for (int i = 0; i < level->room_count; ++i) {
     // bg by default for now
     sprite_sheet_init(&level->rooms[i]->tile_sheet, "res/bg.png", 8, 8, 4.0f);
   }
-  state.current_level = state.loaded_levels;
-  state.levels[state.loaded_levels++] = level;
+  // state.current_level = state.loaded_levels;
+  // state.levels[state.loaded_levels++] = level;
 }
 
 void push_level(sprite_t** batch, level_t* level) {
-  ASSERT(state.current_level < MAX_LEVELS && state.levels[state.current_level]);
+  // ASSERT(state.current_level < MAX_LEVELS &&
+  // state.levels[state.current_level]);
 
   ASSERT(level->name, "must build the levels first");
   char level_msg[32];

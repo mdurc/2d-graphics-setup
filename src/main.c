@@ -1,18 +1,51 @@
 #include "background.h"
 #include "c-lib/dynlist.h"
 #include "c-lib/time.h"
+#include "config/config.h"
 #include "font.h"
-#include "level.h"
 #include "renderer/render.h"
 #include "sprite_sheet/img.h"
 #include "sprite_sheet/sprite_sheet.h"
 #include "state.h"
+#include "time.h"
+
+static bool should_quit = false;
+static fv2 pos;
+static input_key_t last_dir = INPUT_KEY_LEFT;
+static int animation_idx = 1;
+
+static void input_handle(void) {
+  if (state.input.left == KS_PRESSED || state.input.left == KS_HELD) {
+    pos.x -= 500 * state.time.delta;
+    last_dir = INPUT_KEY_LEFT;
+    animation_idx = 1;
+  }
+  if (state.input.right == KS_PRESSED || state.input.right == KS_HELD) {
+    pos.x += 500 * state.time.delta;
+    last_dir = INPUT_KEY_RIGHT;
+    animation_idx = 2;
+  }
+  if (state.input.up == KS_PRESSED || state.input.up == KS_HELD) {
+    pos.y -= 500 * state.time.delta;
+    animation_idx = last_dir == INPUT_KEY_LEFT ? 3 : 4;
+  }
+  if (state.input.down == KS_PRESSED || state.input.down == KS_HELD) {
+    pos.y += 500 * state.time.delta;
+    animation_idx = last_dir == INPUT_KEY_LEFT ? 5 : 6;
+  }
+  if (state.input.escape == KS_PRESSED || state.input.escape == KS_HELD) {
+    should_quit = true;
+  }
+}
 
 int main(void) {
+  time_init(60);
+  config_init();
+  render_init(SCREEN_WIDTH, SCREEN_HEIGHT);
+
   state_init();
 
-  state.quit = false;
-  SDL_Event ev;
+  pos = (fv2){SCREEN_WIDTH / 2.0f - 100, SCREEN_HEIGHT / 2.0f - 100};
 
   const char* msg =
       "abcdefghijklmnopqrstuvwxyz"
@@ -21,39 +54,38 @@ int main(void) {
       "\n!@#$%^&*()_+="
       "\n,./<>?;':\"[]";
 
-  while (!state.quit) {
+  while (!should_quit) {
+    time_update();
+
+    SDL_Event ev;
+
     while (SDL_PollEvent(&ev)) {
       switch (ev.type) {
-        case SDL_QUIT: state.quit = true; break;
+        case SDL_QUIT: should_quit = true; break;
+        default: break;
       }
     }
 
-    float t = 100.0f + (cosf(time_s()) * 100.0f);
+    input_update();
+    input_handle();
 
-    if ((t > 10.0f && state.current_level == 0) ||
-        (t < 10.0f && state.current_level == 1)) {
-      // set_level(&state, state.current_level == 0 ? 1 : 0);
-    }
+    sprite_t player = {.src_idx = (iv2){animation_idx, 0},
+                       .dst_px = pos,
+                       .rotation = 0.0f,
+                       .src_sheet = &state.bg_sheet};
 
-    fv2 a_pos = {.x = t, .y = t};
-    fv2 b_pos = {.x = t, .y = a_pos.y + 8.0f * state.font_sheet.scale};
+    f32 t = 100.0f + (cosf(time_s()) * 100.0f);
 
     DYNLIST(sprite_t) batch = dynlist_create(sprite_t);
 
     push_background(&batch, &state.bg_sheet);
-    push_level(&batch, state.levels[state.current_level]);
-    push_font_ch(&batch, &state.font_sheet, 'A', a_pos);
-    push_font_str(&batch, &state.font_sheet, msg, b_pos);
-
-    sprite_t player = {
-        .src_idx = (iv2){1, 0},
-        .dst_px = (fv2){SCREEN_WIDTH / 2.0f - 100, SCREEN_HEIGHT / 2.0f - 100},
-        .rotation = 0.0f,
-        .src_sheet = &state.bg_sheet};
+    push_font_ch(&batch, &state.font_sheet, 'A', (fv2){t, t});
+    push_font_str(&batch, &state.font_sheet, msg,
+                  (fv2){t, t + 8.0f * state.font_sheet.scale});
 
     render_begin();
     render_batch(&batch, true);
-    render_sprite(&player, 32.0f);
+    render_sprite(&player, 46.0f);
     render_end();
   }
 

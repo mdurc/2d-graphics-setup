@@ -8,8 +8,8 @@ void render_init(u32 width, u32 height) {
   ASSERT(!SDL_Init(SDL_INIT_VIDEO), "failed SDL_Init: %s\n", SDL_GetError());
 
   state.window =
-      SDL_CreateWindow("window name", SDL_WINDOWPOS_CENTERED,
-                       SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+      SDL_CreateWindow("window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                       width, height, SDL_WINDOW_SHOWN);
   ASSERT(state.window, "failed to create sdl window: %s\n", SDL_GetError());
 
   state.renderer = SDL_CreateRenderer(

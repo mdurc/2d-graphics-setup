@@ -1,0 +1,21 @@
+- better input system
+  - implement keyboard/mouse input abstraction layer
+  - add input event system with callbacks
+  - input mapping and configuration system
+- audio System
+  - audio manager for sound effects and music
+- sprite batching for performance optimization
+  - shader system for custom effects
+  - particle system for visual effects
+- camera system with zoom/pan/rotation
+- animation System
+- sprite animation with keyframe support
+- animation state machine with events and callbacks
+- UI System
+  - widget-based UI framework
+  - layout management (grid, flexbox-like)
+  - UI themes and styling
+- Entity Component System (ECS)
+- physics system
+  - 2D collision detection (AABB, circle, polygon)
+- scene management, loading/unloading
