@@ -28,7 +28,7 @@ int main(void) {
       }
     }
 
-    float t = 10.0f + (cosf(time_s()) * 10.0f);
+    float t = 100.0f + (cosf(time_s()) * 100.0f);
 
     if ((t > 10.0f && state.current_level == 0) ||
         (t < 10.0f && state.current_level == 1)) {
@@ -36,7 +36,7 @@ int main(void) {
     }
 
     fv2 a_pos = {.x = t, .y = t};
-    fv2 b_pos = {.x = t, .y = a_pos.y + 8.0f};
+    fv2 b_pos = {.x = t, .y = a_pos.y + 8.0f * state.font_sheet.scale};
 
     DYNLIST(sprite_t) batch = dynlist_create(sprite_t);
 
@@ -45,8 +45,15 @@ int main(void) {
     push_font_ch(&batch, &state.font_sheet, 'A', a_pos);
     push_font_str(&batch, &state.font_sheet, msg, b_pos);
 
+    sprite_t player = {
+        .src_idx = (iv2){1, 0},
+        .dst_px = (fv2){SCREEN_WIDTH / 2.0f - 100, SCREEN_HEIGHT / 2.0f - 100},
+        .rotation = 0.0f,
+        .src_sheet = &state.bg_sheet};
+
     render_begin();
     render_batch(&batch, true);
+    render_sprite(&player, 32.0f);
     render_end();
   }
 

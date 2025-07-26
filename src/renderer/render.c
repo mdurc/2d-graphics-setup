@@ -24,24 +24,27 @@ void render_begin(void) {
 
 void render_end(void) { SDL_RenderPresent(state.renderer); }
 
+void render_sprite(sprite_t* sprite, f32 scale) {
+  ASSERT(sprite->src_sheet, "src sprite sheet cannot be null for a sprite");
+  int sw = sprite->src_sheet->sprite_width;
+  int sh = sprite->src_sheet->sprite_height;
+  SDL_Rect src = {.x = sprite->src_idx.x * sw,
+                  .y = sprite->src_idx.y * sh,
+                  .w = sw,
+                  .h = sh};
+  SDL_Rect dst_px_pos = {.x = (int)(sprite->dst_px.x),
+                         .y = (int)(sprite->dst_px.y),
+                         .w = (int)(sw * scale),
+                         .h = (int)(sh * scale)};
+  SDL_RenderCopyEx(state.renderer, sprite->src_sheet->img.texture, &src,
+                   &dst_px_pos, sprite->rotation, NULL, SDL_FLIP_NONE);
+}
+
 void render_batch(sprite_t** batch, bool clear_after_render) {
   ASSERT(batch, "dynlist batch must not be null");
 
   dynlist_each(*batch, sprite) {
-    ASSERT(sprite->src_sheet, "src sprite sheet cannot be null for a sprite");
-    int sw = sprite->src_sheet->sprite_width;
-    int sh = sprite->src_sheet->sprite_height;
-    f32 scale = sprite->src_sheet->scale;
-    SDL_Rect src = {.x = sprite->src_idx.x * sw,
-                    .y = sprite->src_idx.y * sh,
-                    .w = sw,
-                    .h = sh};
-    SDL_Rect dst_px_pos = {.x = (int)(sprite->dst_px.x * scale),
-                           .y = (int)(sprite->dst_px.y * scale),
-                           .w = (int)(sw * scale),
-                           .h = (int)(sh * scale)};
-    SDL_RenderCopyEx(state.renderer, sprite->src_sheet->img.texture, &src,
-                     &dst_px_pos, sprite->rotation, NULL, SDL_FLIP_NONE);
+    render_sprite(sprite, sprite->src_sheet->scale);
   }
 
   if (clear_after_render) {

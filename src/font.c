@@ -33,15 +33,16 @@ void push_font_ch(sprite_t** batch, sprite_sheet_t* font_sheet, char ch,
 void push_font_str(sprite_t** batch, sprite_sheet_t* font_sheet,
                    const char* str, fv2 dst_px_pos) {
   f32 starting_x = dst_px_pos.x;
+  f32 scale = font_sheet->scale;
 
   const char* p = str;
   while (*p) {
     if (*p == '\n') {
-      dst_px_pos.y += 8.0f;
+      dst_px_pos.y += 8.0f * scale;
       dst_px_pos.x = starting_x;
     } else {
       push_font_ch(batch, font_sheet, *p, dst_px_pos);
-      dst_px_pos.x += 9.0f;
+      dst_px_pos.x += 9.0f * scale;
     }
 
     ++p;
