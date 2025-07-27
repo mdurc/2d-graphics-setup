@@ -116,42 +116,75 @@ int main(void) {
     }
 
     render_aabb((f32*)&player_aabb, WHITE);
-    render_aabb((f32*)&sum_aabb, MAGENTA); // minkowski sum render
 
-    aabb_t minkowski_diff = aabb_minkowski_difference(player_aabb, cursor_aabb);
-    render_aabb((f32*)&minkowski_diff, ORANGE);
-    // the usefulness comes from: our player box is intersecting with the cursor
-    // box IFF the minkowski difference box contains the origin
+    vec4 faded = {1, 1, 1, 0.3f};
 
     if (physics_aabb_intersect_aabb(player_aabb, cursor_aabb)) {
-      vec2 pv;
-      aabb_penetration_vector(pv, minkowski_diff);
-
-      aabb_t collision_aabb = cursor_aabb;
-      // move it outside of the player box the cursor is currently inside
-      collision_aabb.position[0] += pv[0];
-      collision_aabb.position[1] += pv[1];
-
       render_aabb((f32*)&cursor_aabb, RED);
-      render_aabb((f32*)&collision_aabb, CYAN);
-
-      // show the projection vector that we used
-      vec2_add(pv, cursor_pos, pv);
-      render_line_segment(cursor_pos, pv, CYAN);
     } else {
       render_aabb((f32*)&cursor_aabb, WHITE);
     }
 
-    render_aabb((f32*)&start_aabb, GREEN);
-    render_line_segment(start_aabb.position, cursor_pos, CYAN);
+    render_aabb((f32*)&start_aabb, faded);
+    render_line_segment(start_aabb.position, cursor_pos, faded);
 
-    if (physics_point_intersect_aabb(cursor_pos, player_aabb)) {
-      render_quad(cursor_pos, (vec2){5, 5}, RED);
-    } else {
-      render_quad(cursor_pos, (vec2){5, 5}, WHITE);
+    f32 x = sum_aabb.position[0];
+    f32 y = sum_aabb.position[1];
+    f32 size = sum_aabb.half_size[0];
+
+    render_line_segment((vec2){x-size, 0}, (vec2){x-size, SCREEN_HEIGHT}, faded);
+    render_line_segment((vec2){x+size, 0}, (vec2){x+size, SCREEN_HEIGHT}, faded);
+    render_line_segment((vec2){0, y-size}, (vec2){SCREEN_WIDTH, y-size}, faded);
+    render_line_segment((vec2){0, y+size}, (vec2){SCREEN_WIDTH, y+size}, faded);
+
+    vec2 min, max;
+    physics_aabb_min_max(min, max, sum_aabb);
+
+    vec2 magnitude;
+    vec2_sub(magnitude, cursor_pos, start_aabb.position);
+
+    hit_t hit = physics_ray_intersect_aabb(start_aabb.position, magnitude, sum_aabb);
+
+    if (hit.is_hit) {
+      aabb_t hit_aabb = {
+        .position = {hit.position[0], hit.position[1]},
+        .half_size = {start_aabb.half_size[0], start_aabb.half_size[1]}
+      };
+      render_aabb((f32*)&hit_aabb, CYAN);
+      render_quad(hit.position, (vec2){5,5}, CYAN);
+    }
+
+    for (u8 i = 0; i < 2; ++i) {
+      if (magnitude[i] != 0.0f) {
+        f32 t1 = (min[i] - cursor_pos[i]) / magnitude[i];
+        f32 t2 = (max[i] - cursor_pos[i]) / magnitude[i];
+
+        // entry points are cyan and exit points are orange.
+        // we know that if our box goes within the sum_aabb, then the box is colliding.
+        // thus, if our ray-path shows that our box is going to enter the sum_aabb box
+        // and then exit the sum_aabb box, then we know that the path leads to a collision
+
+        vec2 point;
+        vec2_scale(point, magnitude, t1);
+        vec2_add(point, point, cursor_pos);
+        if (min[i] < start_aabb.position[i]) {
+          render_quad(point, (vec2){5, 5}, ORANGE);
+        } else {
+          render_quad(point, (vec2){5, 5}, CYAN);
+        }
+
+        vec2_scale(point, magnitude, t2);
+        vec2_add(point, point, cursor_pos);
+        if (max[i] < start_aabb.position[i]) {
+          render_quad(point, (vec2){5, 5}, CYAN);
+        } else {
+          render_quad(point, (vec2){5, 5}, ORANGE);
+        }
+      }
     }
 
     render_end();
+    time_update_late();
   }
 
   physics_destroy();
