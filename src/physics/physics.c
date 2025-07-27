@@ -18,35 +18,69 @@ void physics_init(void) {
 }
 void physics_destroy(void) { dynlist_destroy(phys_state.body_list); }
 
-static hit_t sweep_static_bodies(aabb_t aabb, vec2 velocity) {
-  hit_t result = {.time = 0xBBBB};
+static void update_sweep_result(hit_t* result, size_t other_id, aabb_t a,
+                                aabb_t b, vec2 velocity, u8 a_collision_mask,
+                                u8 b_collision_layer) {
+  if ((a_collision_mask & b_collision_layer) == 0) {
+    return;
+  }
 
-  dynlist_each(phys_state.static_body_list, static_body) {
-    aabb_t sum_aabb = static_body->aabb;
-    vec2_add(sum_aabb.half_size, sum_aabb.half_size, aabb.half_size);
+  aabb_t sum_aabb = b;
+  vec2_add(sum_aabb.half_size, sum_aabb.half_size, a.half_size);
 
-    hit_t hit = physics_ray_intersect_aabb(aabb.position, velocity, sum_aabb);
-    if (!hit.is_hit) {
-      continue;
-    }
-    if (hit.time < result.time) {
-      result = hit;
-    } else if (float_eq(hit.time, result.time)) {
+  hit_t hit = physics_ray_intersect_aabb(a.position, velocity, sum_aabb);
+  if (hit.is_hit) {
+    if (hit.time < result->time) {
+      *result = hit;
+    } else if (float_eq(hit.time, result->time)) {
       // get the highest velocity axis first
       if (fabsf(velocity[0]) > fabsf(velocity[1]) && hit.normal[0] != 0.0f) {
-        result = hit;
+        *result = hit;
       } else if (fabsf(velocity[1]) > fabsf(velocity[0]) &&
                  hit.normal[1] != 0.0f) {
-        result = hit;
+        *result = hit;
       }
     }
+    result->other_id = other_id;
+  }
+}
+
+static hit_t sweep_static_bodies(body_t* body, vec2 velocity) {
+  hit_t result = {.time = 0xBBBB};
+
+  for (u32 i = 0; i < dynlist_size(phys_state.static_body_list); ++i) {
+    static_body_t* static_body = &phys_state.static_body_list[i];
+    update_sweep_result(&result, i, body->aabb, static_body->aabb, velocity,
+                        body->collision_mask, static_body->collision_layer);
+  }
+
+  return result;
+}
+
+static hit_t sweep_bodies(body_t* body, vec2 velocity) {
+  hit_t result = {.time = 0xBBBB};
+
+  for (u32 i = 0; i < dynlist_size(phys_state.body_list); ++i) {
+    body_t* other = &phys_state.body_list[i];
+    if (body == other) {
+      continue;
+    }
+    update_sweep_result(&result, i, body->aabb, other->aabb, velocity,
+                        body->collision_mask, other->collision_layer);
   }
 
   return result;
 }
 
 static void sweep_response(body_t* body, vec2 velocity) {
-  hit_t hit = sweep_static_bodies(body->aabb, velocity);
+  hit_t hit = sweep_static_bodies(body, velocity);
+  hit_t hit_moving = sweep_bodies(body, velocity);
+
+  if (hit_moving.is_hit) {
+    if (body->on_hit != NULL) {
+      body->on_hit(body, physics_body_get(hit_moving.other_id), hit_moving);
+    }
+  }
 
   if (hit.is_hit) {
     body->aabb.position[0] = hit.position[0];
@@ -58,6 +92,11 @@ static void sweep_response(body_t* body, vec2 velocity) {
     } else if (hit.normal[1] != 0.0f) {
       body->aabb.position[0] += velocity[0];
       body->velocity[1] = 0;
+    }
+
+    if (body->on_hit_static != NULL) {
+      body->on_hit_static(body, physics_static_body_get(hit_moving.other_id),
+                          hit);
     }
   } else {
     vec2_add(body->aabb.position, body->aabb.position, velocity);
@@ -114,32 +153,42 @@ void physics_clamp_body(body_t* body) {
   }
 }
 
-size_t physics_body_create(vec2 position, vec2 size) {
-  *dynlist_append(phys_state.body_list) =
-      (body_t){.aabb = {.position = {position[0], position[1]},
-                        .half_size = {size[0] * 0.5f, size[1] * 0.5f}},
-               .velocity = {0, 0},
-               .acceleration = {0, 0}};
+size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
+                           u8 collision_layer, u8 collision_mask,
+                           on_hit_func on_hit,
+                           on_hit_static_func on_hit_static) {
+  *dynlist_append(phys_state.body_list) = (body_t){
+      .aabb = {.position = {position[0], position[1]},
+               .half_size = {size[0] * 0.5f, size[1] * 0.5f}},
+      .velocity = {velocity[0], velocity[1]},
+      .acceleration = {0, 0},
+      .collision_layer = collision_layer,
+      .collision_mask = collision_mask,
+      .on_hit = on_hit,
+      .on_hit_static = on_hit_static,
+  };
 
   return dynlist_size(phys_state.body_list) - 1;
 }
 
 body_t* physics_body_get(size_t idx) {
-  ASSERT(idx < (size_t)dynlist_size(phys_state.body_list));
+  ASSERT(idx < dynlist_size(phys_state.body_list));
   return &phys_state.body_list[idx];
 }
 
-size_t physics_static_body_create(vec2 position, vec2 size) {
+size_t physics_static_body_create(vec2 position, vec2 size,
+                                  u8 collision_layer) {
   *dynlist_append(phys_state.static_body_list) = (static_body_t){
       .aabb = {.position = {position[0], position[1]},
                .half_size = {size[0] * 0.5f, size[1] * 0.5f}},
+      .collision_layer = collision_layer,
   };
 
   return dynlist_size(phys_state.static_body_list) - 1;
 }
 
 static_body_t* physics_static_body_get(size_t idx) {
-  ASSERT(idx < (size_t)dynlist_size(phys_state.static_body_list));
+  ASSERT(idx < dynlist_size(phys_state.static_body_list));
   return &phys_state.static_body_list[idx];
 }
 

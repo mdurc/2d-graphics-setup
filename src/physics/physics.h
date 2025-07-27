@@ -3,27 +3,41 @@
 #include "../c-lib/dynlist.h"
 #include "linmath.h"
 
+typedef struct body body_t;
+typedef struct static_body static_body_t;
+typedef struct hit hit_t;
+
+typedef void (*on_hit_func)(body_t* self, body_t* other, hit_t hit);
+typedef void (*on_hit_static_func)(body_t* self, static_body_t* other,
+                                   hit_t hit);
+
 typedef struct {
   vec2 position;
   vec2 half_size;
 } aabb_t;
 
-typedef struct {
+struct body {
   aabb_t aabb;
   vec2 velocity;
   vec2 acceleration;
-} body_t;
+  on_hit_func on_hit;
+  on_hit_static_func on_hit_static;
+  u8 collision_layer;
+  u8 collision_mask;
+};
 
-typedef struct {
+struct static_body {
   aabb_t aabb;
-} static_body_t;
+  u8 collision_layer;
+};
 
-typedef struct {
-  bool is_hit;
+struct hit {
+  size_t other_id;
   f32 time;
   vec2 position;
   vec2 normal;
-} hit_t;
+  bool is_hit;
+};
 
 typedef struct {
   f32 gravity, terminal_velocity;
@@ -37,9 +51,12 @@ void physics_destroy(void);
 void physics_update(void);
 void physics_clamp_body(body_t* body);
 
-size_t physics_body_create(vec2 position, vec2 size);
+size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
+                           u8 collision_layer, u8 collision_mask,
+                           on_hit_func on_hit,
+                           on_hit_static_func on_hit_static);
 body_t* physics_body_get(size_t idx);
-size_t physics_static_body_create(vec2 position, vec2 size);
+size_t physics_static_body_create(vec2 position, vec2 size, u8 collision_layer);
 static_body_t* physics_static_body_get(size_t idx);
 
 void physics_aabb_min_max(vec2 min, vec2 max, aabb_t aabb);

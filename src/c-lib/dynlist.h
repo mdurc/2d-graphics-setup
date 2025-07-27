@@ -49,8 +49,8 @@ int main() {
 #define DYNLIST(_T) typeof(_T*)
 
 typedef struct {
-  int size;
-  int capacity;
+  size_t size;
+  size_t capacity;
   size_t t_size;
 } dynlist_header_t;
 
@@ -85,12 +85,12 @@ M_INLINE dynlist_header_t* dynlist_header(const void* l) {
     })
 
 // get current list size
-M_INLINE int dynlist_size(const void* l) {
+M_INLINE size_t dynlist_size(const void* l) {
   return l ? dynlist_header(l)->size : 0;
 }
 
 // get current list capacity
-M_INLINE int dynlist_capacity(const void* l) {
+M_INLINE size_t dynlist_capacity(const void* l) {
   return l ? dynlist_header(l)->capacity : 0;
 }
 
@@ -145,14 +145,14 @@ M_INLINE int dynlist_capacity(const void* l) {
         typeof(_d) *_pd = &(_d); \
         typeof(_e) *_pe = &(_e); \
         ASSERT(dynlist_header(*_pd)->t_size == dynlist_header(*_pe)->t_size); \
-        const int _offset = dynlist_size(*_pd), _n = dynlist_size(*_pe); \
+        const size_t _offset = dynlist_size(*_pd), _n = dynlist_size(*_pe); \
         dynlist_resize(*_pd, _offset + dynlist_size(*_pe)); \
-        for (int _i = 0; _i < _n; _i++) { (*_pd)[_offset + _i] = (*_pe)[_i]; } \
+        for (size_t _i = 0; _i < _n; _i++) { (*_pd)[_offset + _i] = (*_pe)[_i]; } \
     })
 
 // iteration macro
 #define dynlist_each(_d, _it) \
-  for (int _i = 0, _size = dynlist_size(_d); _i < _size; _i++) \
+  for (size_t _i = 0, _size = dynlist_size(_d); _i < _size; _i++) \
       for (typeof(&(_d)[0]) _it = &(_d)[_i]; _it; _it = NULL)
 
 // remove current element during iteration
@@ -163,7 +163,7 @@ M_INLINE int dynlist_capacity(const void* l) {
 } while (0)
 
 // comparison function type for sorting
-typedef int (*dynlist_cmp_func)(const void*, const void*);
+typedef size_t (*dynlist_cmp_func)(const void*, const void*);
 
 // sort list using comparison function
 #define dynlist_sort(_d, _cmp) _dynlist_sort_impl((void**)&(_d), (_cmp))
@@ -178,7 +178,7 @@ typedef int (*dynlist_cmp_func)(const void*, const void*);
 // implementations, not intended for direct use
 
 static M_UNUSED void _dynlist_init_impl(void** plist, size_t t_size,
-                                        int init_cap) {
+                                        size_t init_cap) {
   ASSERT(!*plist);
 
   init_cap = max(init_cap, DYNLIST_MIN_CAP);
@@ -199,7 +199,7 @@ static M_UNUSED void _dynlist_destroy_impl(void** plist) {
   }
 }
 
-static M_UNUSED void _dynlist_realloc_impl(void** plist, int new_cap,
+static M_UNUSED void _dynlist_realloc_impl(void** plist, size_t new_cap,
                                            bool allow_contract) {
   ASSERT(new_cap >= 0);
   ASSERT(*plist);
@@ -211,7 +211,7 @@ static M_UNUSED void _dynlist_realloc_impl(void** plist, int new_cap,
   if (new_cap == h->capacity) return;
 
   // new capacity, power of 2
-  int capacity = DYNLIST_MIN_CAP;
+  size_t capacity = DYNLIST_MIN_CAP;
   while (capacity < new_cap) {
     capacity *= 2;
   }
@@ -235,7 +235,7 @@ static M_UNUSED void _dynlist_realloc_impl(void** plist, int new_cap,
   *plist = new_data;
 }
 
-static M_UNUSED void* _dynlist_insert_impl(void** plist, int index) {
+static M_UNUSED void* _dynlist_insert_impl(void** plist, size_t index) {
   ASSERT(plist);
   ASSERT(*plist);
 
@@ -258,7 +258,7 @@ static M_UNUSED void* _dynlist_insert_impl(void** plist, int index) {
   return data + index * h->t_size;
 }
 
-static M_UNUSED void _dynlist_remove_impl(void** plist, int index,
+static M_UNUSED void _dynlist_remove_impl(void** plist, size_t index,
                                           bool allow_contract) {
   ASSERT(plist);
   ASSERT(*plist);
@@ -277,7 +277,7 @@ static M_UNUSED void _dynlist_remove_impl(void** plist, int index,
   dynlist_header(*plist)->size--;
 }
 
-static M_UNUSED void _dynlist_resize_impl(void** plist, int n,
+static M_UNUSED void _dynlist_resize_impl(void** plist, size_t n,
                                           bool allow_contract) {
   ASSERT(plist);
   ASSERT(*plist);
@@ -312,8 +312,8 @@ static M_UNUSED void _dynlist_sort_impl(void** plist, dynlist_cmp_func cmp) {
   dynlist_header_t* h = dynlist_header(*plist);
 
   // bubble sort for small lists
-  for (int i = 0; i < h->size - 1; i++) {
-    for (int j = 0; j < h->size - i - 1; j++) {
+  for (size_t i = 0; i < h->size - 1; i++) {
+    for (size_t j = 0; j < h->size - i - 1; j++) {
       u8* a = (u8*)(*plist) + j * h->t_size;
       u8* b = a + h->t_size;
       if (cmp(a, b) > 0) {
