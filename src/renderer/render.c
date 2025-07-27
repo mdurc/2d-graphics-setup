@@ -13,7 +13,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-static u32 shader_program;
+static u32 shader_default;
 static u32 vao_quad;
 static u32 vbo_quad;
 static u32 ebo_quad;
@@ -24,12 +24,11 @@ void render_init(u32 width, u32 height) {
 
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
   render_init_color_texture(&texture_color);
-  shader_program = render_create_shader("./src/shaders/vert.glsl",
-                                        "./src/shaders/frag.glsl");
+  render_init_shaders(&shader_default, width, height);
 
   stbi_set_flip_vertically_on_load(1);
 
-  glUseProgram(shader_program);
+  glUseProgram(shader_default);
   sprite_sheet_t sheet;
   render_init_sprite_sheet(&sheet, "./res/font.png", 8, 8);
   texture_color = sheet.texture_id;
@@ -46,9 +45,17 @@ void render_end(void) {
 }
 
 void render_quad(vec2 pos, vec2 size, vec4 color) {
-  glUseProgram(shader_program);
+  glUseProgram(shader_default);
 
-  glUniform4fv(glGetUniformLocation(shader_program, "color"), 1, color);
+  mat4x4 model;
+  mat4x4_identity(model);
+
+  mat4x4_translate(model, pos[0], pos[1], 0);
+  mat4x4_scale_aniso(model, model, size[0], size[1], 1);
+
+  glUniformMatrix4fv(glGetUniformLocation(shader_default, "model"), 1, GL_FALSE,
+                     &model[0][0]);
+  glUniform4fv(glGetUniformLocation(shader_default, "color"), 1, color);
 
   // the vao stores all of the vbo's linked to it
   // the vao also stores the glBindBuffer calls when the target is

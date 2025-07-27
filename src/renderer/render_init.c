@@ -3,6 +3,7 @@
 #include "../c-lib/misc.h"
 #include "../io/io.h"
 #include "../state.h"
+#include "linmath.h"
 #include "stb_image.h"
 
 #define GLFW_INCLUDE_NONE
@@ -95,6 +96,20 @@ u32 render_create_shader(const char* path_vert, const char* path_frag) {
   free(file_frag.data);
 
   return shader_program;
+}
+
+void render_init_shaders(u32* shader_program, f32 render_width,
+                         f32 render_height) {
+  mat4x4 projection;
+  *shader_program = render_create_shader("./src/shaders/vert.glsl",
+                                         "./src/shaders/frag.glsl");
+
+  // orthographic camera view
+  mat4x4_ortho(projection, 0, render_width, 0, render_height, -2, 2);
+
+  glUseProgram(*shader_program);
+  glUniformMatrix4fv(glGetUniformLocation(*shader_program, "projection"), 1,
+                     GL_FALSE, &projection[0][0]);
 }
 
 void render_init_color_texture(u32* texture) {
