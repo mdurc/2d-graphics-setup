@@ -3,6 +3,7 @@
 #include "c-lib/time.h"
 #include "config/config.h"
 #include "font.h"
+#include "physics/physics.h"
 #include "renderer/render.h"
 #include "sprite_sheet/img.h"
 #include "sprite_sheet/sprite_sheet.h"
@@ -42,8 +43,18 @@ int main(void) {
   time_init(60);
   config_init();
   render_init(SCREEN_WIDTH, SCREEN_HEIGHT);
-
+  physics_init();
   state_init();
+
+  int body_count = 500;
+  for (int i = 0; i < body_count; ++i) {
+    size_t idx = physics_body_create(
+        (fv2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT},
+        (fv2){rand() % 5, rand() % 5});
+    body_t* body = physics_body_get(idx);
+    body->acceleration.x = rand() % 200 - 100;
+    body->acceleration.y = rand() % 200 - 100;
+  }
 
   pos = (fv2){SCREEN_WIDTH / 2.0f - 100, SCREEN_HEIGHT / 2.0f - 100};
 
@@ -68,6 +79,7 @@ int main(void) {
 
     input_update();
     input_handle();
+    physics_update();
 
     sprite_t player = {.src_idx = (iv2){animation_idx, 0},
                        .dst_px = pos,
@@ -86,6 +98,34 @@ int main(void) {
     render_begin();
     render_batch(&batch, true);
     render_sprite(&player, 46.0f);
+
+    for (int i = 0; i < body_count; ++i) {
+      body_t* body = physics_body_get(i);
+      body->acceleration.x = rand() % 200 - 100;
+      body->acceleration.y = rand() % 200 - 100;
+
+      sprite_sheet_t* bg = &state.bg_sheet;
+
+      sprite_t block = {.src_idx = (iv2){6, 6},
+                        .dst_px = (fv2){body->aabb.pos.x, body->aabb.pos.y},
+                        .rotation = 0,
+                        .src_sheet = bg};
+
+      f32 scale = 3.0f;
+      render_sprite(&block, scale);
+
+      if (body->aabb.pos.x > (SCREEN_WIDTH - bg->sprite_width * scale) ||
+          body->aabb.pos.x < 0)
+        body->velocity.x *= -1;
+      if (body->aabb.pos.y > (SCREEN_HEIGHT - bg->sprite_height * scale) ||
+          body->aabb.pos.y < 0)
+        body->velocity.y *= -1;
+      if (body->velocity.x > 500) body->velocity.x = 500;
+      if (body->velocity.y > 500) body->velocity.y = 500;
+      if (body->velocity.x < -500) body->velocity.x = -500;
+      if (body->velocity.y < -500) body->velocity.y = -500;
+    }
+
     render_end();
   }
 
