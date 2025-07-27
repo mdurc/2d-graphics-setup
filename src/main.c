@@ -14,7 +14,7 @@
 #include <glad/glad.h>
 
 static vec2 player_pos;
-static vec2 mouse_pos;
+static vec2 cursor_pos;
 
 static input_key_t last_dir = INPUT_KEY_LEFT;
 static int animation_idx = 1;
@@ -48,8 +48,8 @@ static void input_handle(void) {
 
   f64 x, y;
   glfwGetCursorPos(state.window, &x, &y);
-  mouse_pos[0] = x;
-  mouse_pos[1] = SCREEN_HEIGHT - y;
+  cursor_pos[0] = x;
+  cursor_pos[1] = SCREEN_HEIGHT - y;
 }
 
 int main(void) {
@@ -63,11 +63,17 @@ int main(void) {
   render_test_setup(&shader_temp, &vao_one, 1.0f);
   render_test_setup(&shader_temp, &vao_two, -1.0f);
 
-  player_pos[0] = SCREEN_WIDTH / 2.0f - 100;
-  player_pos[1] = SCREEN_HEIGHT / 2.0f - 100;
+  player_pos[0] = SCREEN_WIDTH * 0.5f;
+  player_pos[1] = SCREEN_HEIGHT * 0.5f;
 
-  size_t idx = physics_body_create(player_pos, (vec2){100, 100});
-  body_t* body = physics_body_get(idx);
+  aabb_t player_aabb = {.position = {SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5},
+                        .half_size = {50, 50}};
+  aabb_t cursor_aabb = {.half_size = {75, 75}};
+  aabb_t sum_aabb = {
+      .position = {player_aabb.position[0], player_aabb.position[1]},
+      .half_size = {player_aabb.half_size[0] + cursor_aabb.half_size[0],
+                    player_aabb.half_size[1] + cursor_aabb.half_size[1]}};
+  aabb_t start_aabb = {.half_size = {75, 75}};
 
   const char* msg =
       "abcdefghijklmnopqrstuvwxyz"
@@ -96,20 +102,58 @@ int main(void) {
                 (vec2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f},
                 (vec4){0.0f, 0.0f, 1.0f, 1.0f});
 
-    // moveable quad lines
-    render_aabb((f32*)&body->aabb, BLACK);
-    body->aabb.position[0] = player_pos[0];
-    body->aabb.position[1] = player_pos[1];
+    // aabb rendering
+    player_aabb.position[0] = player_pos[0];
+    player_aabb.position[1] = player_pos[1];
+    cursor_aabb.position[0] = cursor_pos[0];
+    cursor_aabb.position[1] = cursor_pos[1];
 
-    // mouse quad
-    if (physics_point_intersect_aabb(mouse_pos, body->aabb)) {
-      render_quad(mouse_pos, (vec2){5, 5}, RED);
+    int left_mouse_state =
+        glfwGetMouseButton(state.window, GLFW_MOUSE_BUTTON_LEFT);
+    if (left_mouse_state == GLFW_PRESS) {
+      start_aabb.position[0] = cursor_pos[0];
+      start_aabb.position[1] = cursor_pos[1];
+    }
+
+    render_aabb((f32*)&player_aabb, WHITE);
+    render_aabb((f32*)&sum_aabb, MAGENTA); // minkowski sum render
+
+    aabb_t minkowski_diff = aabb_minkowski_difference(player_aabb, cursor_aabb);
+    render_aabb((f32*)&minkowski_diff, ORANGE);
+    // the usefulness comes from: our player box is intersecting with the cursor
+    // box IFF the minkowski difference box contains the origin
+
+    if (physics_aabb_intersect_aabb(player_aabb, cursor_aabb)) {
+      vec2 pv;
+      aabb_penetration_vector(pv, minkowski_diff);
+
+      aabb_t collision_aabb = cursor_aabb;
+      // move it outside of the player box the cursor is currently inside
+      collision_aabb.position[0] += pv[0];
+      collision_aabb.position[1] += pv[1];
+
+      render_aabb((f32*)&cursor_aabb, RED);
+      render_aabb((f32*)&collision_aabb, CYAN);
+
+      // show the projection vector that we used
+      vec2_add(pv, cursor_pos, pv);
+      render_line_segment(cursor_pos, pv, CYAN);
     } else {
-      render_quad(mouse_pos, (vec2){5, 5}, WHITE);
+      render_aabb((f32*)&cursor_aabb, WHITE);
+    }
+
+    render_aabb((f32*)&start_aabb, GREEN);
+    render_line_segment(start_aabb.position, cursor_pos, CYAN);
+
+    if (physics_point_intersect_aabb(cursor_pos, player_aabb)) {
+      render_quad(cursor_pos, (vec2){5, 5}, RED);
+    } else {
+      render_quad(cursor_pos, (vec2){5, 5}, WHITE);
     }
 
     render_end();
   }
 
+  physics_destroy();
   state_destroy();
 }
