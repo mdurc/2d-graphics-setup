@@ -97,6 +97,19 @@ u32 render_create_shader(const char* path_vert, const char* path_frag) {
   return shader_program;
 }
 
+void render_init_color_texture(u32* texture) {
+  // this will be the blank texture so that whatever color we wish to draw to
+  // the object, it will be that color only
+  glGenTextures(1, texture);
+  glBindTexture(GL_TEXTURE_2D, *texture);
+
+  u8 solid_white[4] = {255, 255, 255, 255};
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               solid_white);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   // when drawing two triangles, we will have 2 extra vertices, which is not ok.
   // EBO, element buffer objects select a specific order of vertices to use.

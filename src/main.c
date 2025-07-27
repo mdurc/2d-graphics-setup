@@ -149,7 +149,7 @@ int main(void) {
     glUseProgram(shader_temp);
     render_vao(shader_temp, vao_one);
     render_vao(shader_temp, vao_two);
-    render_quad((vec2){0, 0}, (vec2){0, 0}, (vec4){1.0f, 0.0f, 1.0f, 1.0f});
+    render_quad((vec2){0, 0}, (vec2){0, 0}, (vec4){0.0f, 0.0f, 1.0f, 1.0f});
     //   render_batch(&batch, true);
     //   render_sprite(&player, 46.0f);
     //

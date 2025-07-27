@@ -17,24 +17,22 @@ static u32 shader_program;
 static u32 vao_quad;
 static u32 vbo_quad;
 static u32 ebo_quad;
-static u32 texture;
+static u32 texture_color;
 
 void render_init(u32 width, u32 height) {
   render_init_window(width, height);
 
+  render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
+  render_init_color_texture(&texture_color);
   shader_program = render_create_shader("./src/shaders/vert.glsl",
                                         "./src/shaders/frag.glsl");
 
-  glUseProgram(shader_program);
-  // every shader/rendering call will now use this program (thus the shaders)
-
-  render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
-
   stbi_set_flip_vertically_on_load(1);
 
+  glUseProgram(shader_program);
   sprite_sheet_t sheet;
   render_init_sprite_sheet(&sheet, "./res/font.png", 8, 8);
-  texture = sheet.texture_id;
+  texture_color = sheet.texture_id;
 }
 
 void render_begin(void) {
@@ -59,7 +57,7 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glBindVertexArray(vao_quad);
   // glDrawArrays(GL_TRIANGLES, 0, 3); // will draw the vertices from the vbo
 
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D, texture_color);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // will draw from the ebo
 
   glBindVertexArray(0);
