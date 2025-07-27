@@ -14,10 +14,12 @@
 #include <glad/glad.h>
 
 static vec2 player_pos;
+static vec2 mouse_pos;
+
 static input_key_t last_dir = INPUT_KEY_LEFT;
 static int animation_idx = 1;
 
-static void input_handle(void) {
+static void check_player_move(void) {
   if (state.input.left == KS_PRESSED || state.input.left == KS_HELD) {
     player_pos[0] -= 500 * state.time.delta;
     last_dir = INPUT_KEY_LEFT;
@@ -29,16 +31,25 @@ static void input_handle(void) {
     animation_idx = 2;
   }
   if (state.input.up == KS_PRESSED || state.input.up == KS_HELD) {
-    player_pos[1] -= 500 * state.time.delta;
+    player_pos[1] += 500 * state.time.delta;
     animation_idx = last_dir == INPUT_KEY_LEFT ? 3 : 4;
   }
   if (state.input.down == KS_PRESSED || state.input.down == KS_HELD) {
-    player_pos[1] += 500 * state.time.delta;
+    player_pos[1] -= 500 * state.time.delta;
     animation_idx = last_dir == INPUT_KEY_LEFT ? 5 : 6;
   }
+}
+
+static void input_handle(void) {
   if (state.input.escape == KS_PRESSED || state.input.escape == KS_HELD) {
     glfwSetWindowShouldClose(state.window, true);
   }
+  check_player_move();
+
+  f64 x, y;
+  glfwGetCursorPos(state.window, &x, &y);
+  mouse_pos[0] = x;
+  mouse_pos[1] = SCREEN_HEIGHT - y;
 }
 
 int main(void) {
@@ -48,22 +59,15 @@ int main(void) {
   physics_init();
   state_init();
 
-  int body_count = 500;
-  for (int i = 0; i < body_count; ++i) {
-    size_t idx = physics_body_create(
-        (vec2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT},
-        (vec2){rand() % 100, rand() % 100});
-    body_t* body = physics_body_get(idx);
-    body->acceleration[0] = rand() % 200 - 100;
-    body->acceleration[1] = rand() % 200 - 100;
-  }
-
   u32 shader_temp, vao_one, vao_two;
   render_test_setup(&shader_temp, &vao_one, 1.0f);
   render_test_setup(&shader_temp, &vao_two, -1.0f);
 
   player_pos[0] = SCREEN_WIDTH / 2.0f - 100;
   player_pos[1] = SCREEN_HEIGHT / 2.0f - 100;
+
+  size_t idx = physics_body_create(player_pos, (vec2){100, 100});
+  body_t* body = physics_body_get(idx);
 
   const char* msg =
       "abcdefghijklmnopqrstuvwxyz"
@@ -82,32 +86,26 @@ int main(void) {
     // f32 t = 100.0f + (cosf(time_s()) * 100.0f);
 
     render_begin();
-    glUseProgram(shader_temp);
+
+    // two triangles
     render_test_triangle(shader_temp, vao_one);
     render_test_triangle(shader_temp, vao_two);
+
+    // center quad
     render_quad((vec2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f},
                 (vec2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f},
                 (vec4){0.0f, 0.0f, 1.0f, 1.0f});
 
-    for (int i = 0; i < body_count; ++i) {
-      body_t* body = physics_body_get(i);
-      render_quad_lines(body->aabb.position, body->aabb.half_size,
-                        (vec4){1.0f, 0.0f, 0.0f, 1.0f});
+    // moveable quad lines
+    render_aabb((f32*)&body->aabb, BLACK);
+    body->aabb.position[0] = player_pos[0];
+    body->aabb.position[1] = player_pos[1];
 
-      float px = body->aabb.position[0];
-      float py = body->aabb.position[1];
-
-      if (px < 0 || px > SCREEN_WIDTH) {
-        body->aabb.position[0] = clamp(px, 0, SCREEN_WIDTH);
-        body->velocity[0] *= -1;
-      }
-
-      if (py < 0 || py > SCREEN_HEIGHT) {
-        body->aabb.position[1] = clamp(py, 0, SCREEN_HEIGHT);
-        body->velocity[1] *= -1;
-      }
-      body->velocity[0] = clamp(body->velocity[0], -500.0f, 500.0f);
-      body->velocity[1] = clamp(body->velocity[1], -500.0f, 500.0f);
+    // mouse quad
+    if (physics_point_intersect_aabb(mouse_pos, body->aabb)) {
+      render_quad(mouse_pos, (vec2){5, 5}, RED);
+    } else {
+      render_quad(mouse_pos, (vec2){5, 5}, WHITE);
     }
 
     render_end();

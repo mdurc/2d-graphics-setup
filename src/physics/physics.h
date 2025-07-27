@@ -23,3 +23,4 @@ void physics_update(void);
 
 size_t physics_body_create(vec2 pos, vec2 size);
 body_t* physics_body_get(size_t idx);
+bool physics_point_intersect_aabb(vec2 point, aabb_t aabb);

@@ -29,3 +29,15 @@ body_t* physics_body_get(size_t idx) {
   ASSERT(idx < (size_t)dynlist_size(phys_state.body_list));
   return &phys_state.body_list[idx];
 }
+
+static void aabb_min_max(vec2 min, vec2 max, aabb_t aabb) {
+  vec2_sub(min, aabb.position, aabb.half_size);
+  vec2_add(max, aabb.position, aabb.half_size);
+}
+
+bool physics_point_intersect_aabb(vec2 point, aabb_t aabb) {
+  vec2 min, max;
+  aabb_min_max(min, max, aabb);
+  return point[0] >= min[0] && point[0] <= max[0] && point[1] >= min[1] &&
+         point[1] <= max[1];
+}

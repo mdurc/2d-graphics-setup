@@ -30,7 +30,7 @@ void render_init(u32 width, u32 height) {
   glUseProgram(shader_default);
   sprite_sheet_t sheet;
   render_init_sprite_sheet(&sheet, "./res/font.png", 8, 8);
-  texture_color = sheet.texture_id;
+  // texture_color = sheet.texture_id;
 }
 
 void render_begin(void) {
@@ -44,6 +44,7 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_default);
 
   mat4x4 model;
+  mat4x4_identity(model);
   mat4x4_translate(model, pos[0], pos[1], 0);
   mat4x4_scale_aniso(model, model, size[0], size[1], 1);
 
@@ -66,26 +67,25 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
 
 void render_quad_lines(vec2 pos, vec2 size, vec4 color) {
   // using the polygon mode (much more performant)
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  render_quad(pos, size, color);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  // render_quad(pos, size, color);
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  // vec2 points[4] = {
-  //     {pos[0] - size[0] * 0.5, pos[1] - size[1] * 0.5},
-  //     {pos[0] + size[0] * 0.5, pos[1] - size[1] * 0.5},
-  //     {pos[0] + size[0] * 0.5, pos[1] + size[1] * 0.5},
-  //     {pos[0] - size[0] * 0.5, pos[1] + size[1] * 0.5},
-  // };
-  //
-  // render_line_segment(points[0], points[1], color);
-  // render_line_segment(points[1], points[2], color);
-  // render_line_segment(points[2], points[3], color);
-  // render_line_segment(points[3], points[0], color);
+  vec2 points[4] = {
+      {pos[0] - size[0] * 0.5, pos[1] - size[1] * 0.5},
+      {pos[0] + size[0] * 0.5, pos[1] - size[1] * 0.5},
+      {pos[0] + size[0] * 0.5, pos[1] + size[1] * 0.5},
+      {pos[0] - size[0] * 0.5, pos[1] + size[1] * 0.5},
+  };
+
+  render_line_segment(points[0], points[1], color);
+  render_line_segment(points[1], points[2], color);
+  render_line_segment(points[2], points[3], color);
+  render_line_segment(points[3], points[0], color);
 }
 
 void render_line_segment(vec2 start, vec2 end, vec4 color) {
   glUseProgram(shader_default);
-  glLineWidth(3);
 
   // normalize the start to end
   f32 x = end[0] - start[0];
@@ -93,6 +93,7 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
   f32 line[6] = {0.0f, 0.0f, 0.0f, x, y, 0.0f};
 
   mat4x4 model;
+  mat4x4_identity(model);
   mat4x4_translate(model, start[0], start[1], 0);
   glUniformMatrix4fv(glGetUniformLocation(shader_default, "model"), 1, GL_FALSE,
                      &model[0][0]);
@@ -111,7 +112,7 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
 
 void render_aabb(f32* aabb, vec4 color) {
   vec2 size;
-  vec2_scale(size, &aabb[2], 2);
+  vec2_scale(size, &aabb[2], 2); // scale the halfsize by 2
   render_quad_lines(&aabb[0], size, color);
 }
 

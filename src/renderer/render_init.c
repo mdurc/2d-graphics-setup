@@ -42,6 +42,8 @@ void render_init_window(u32 width, u32 height) {
   glViewport(0, 0, framebuffer_width, framebuffer_height);
   glfwSetFramebufferSizeCallback(state.window, framebuffer_size_callback);
 
+  glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
   printf("OpenGL Loaded\n");
   printf("Vendor:   %s\n", glGetString(GL_VENDOR));
   printf("Renderer: %s\n", glGetString(GL_RENDERER));
