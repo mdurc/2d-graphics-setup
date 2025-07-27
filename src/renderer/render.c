@@ -53,6 +53,7 @@ void render_quad(void) {
 
 void render_vao(u32 vao) {
   glUseProgram(shader_program);
+
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, 3);
   glBindVertexArray(0);

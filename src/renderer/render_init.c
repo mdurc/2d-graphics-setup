@@ -44,6 +44,10 @@ void render_init_window(u32 width, u32 height) {
   printf("Vendor:   %s\n", glGetString(GL_VENDOR));
   printf("Renderer: %s\n", glGetString(GL_RENDERER));
   printf("Version:  %s\n", glGetString(GL_VERSION));
+
+  int nrAttributes;
+  glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+  printf("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 }
 
 u32 render_create_shader(const char* path_vert, const char* path_frag) {
@@ -96,12 +100,13 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   // when drawing two triangles, we will have 2 extra vertices, which is not ok.
   // EBO, element buffer objects select a specific order of vertices to use.
 
+  // only 4 vertices here instead of 6
   f32 vertices[] = {
-      // only 4 vertices here instead of 6
-      0.5f,  0.5f,  0.0f, // top right
-      0.5f,  -0.5f, 0.0f, // bottom right
-      -0.5f, -0.5f, 0.0f, // bottom left
-      -0.5f, 0.5f,  0.0f  // top left
+      // position         // color
+      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, // top right
+      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
+      -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, // top left
   };
 
   u32 idxs[] = {
@@ -122,12 +127,14 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idxs), idxs, GL_STATIC_DRAW);
 
-  // now we can explain how the vertex data should be interpreted:
-  // the vertices are three 32-bit floats that are tightly packed in memory
-  u32 index = 0; // layout = 0, is the index of the vertex attribute
-  i32 stride = 3 * sizeof(f32); // byte offset between each vertex grouping
-  glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(f32), (void*)0);
   glEnableVertexAttribArray(0);
+
+  // color attribute
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo, we linked it with attrib
 

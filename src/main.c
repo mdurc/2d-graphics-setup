@@ -62,16 +62,18 @@ int main(void) {
 
   u32 vao_one, vbo_one;
   f32 verts_one[] = {
-      -0.9f, -0.3f, 0.0f, //
-      -0.7f, 0.3f,  0.0f, //
-      -0.5f, -0.3f, 0.0f  //
+      // position         // color
+      -0.9f, -0.3f, 0.0f, 1.0f, 0.0f, 0.0f, // left
+      -0.7f, 0.3f,  0.0f, 0.0f, 1.0f, 0.0f, // top
+      -0.5f, -0.3f, 0.0f, 0.0f, 0.0f, 1.0f  // right
   };
 
   u32 vao_two, vbo_two;
   f32 verts_two[] = {
-      0.9f, -0.3f, 0.0f, //
-      0.7f, 0.3f,  0.0f, //
-      0.5f, -0.3f, 0.0f  //
+      // position         // color
+      0.9f, -0.3f, 0.0f, 1.0f, 0.0f, 0.0f, // left
+      0.7f, 0.3f,  0.0f, 0.0f, 1.0f, 0.0f, // top
+      0.5f, -0.3f, 0.0f, 0.0f, 0.0f, 1.0f  // right
   };
 
   glGenVertexArrays(1, &vao_one);
@@ -79,8 +81,13 @@ int main(void) {
   glBindVertexArray(vao_one);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_one);
   glBufferData(GL_ARRAY_BUFFER, sizeof(verts_one), verts_one, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  // color attribute
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
@@ -89,8 +96,13 @@ int main(void) {
   glBindVertexArray(vao_two);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_two);
   glBufferData(GL_ARRAY_BUFFER, sizeof(verts_two), verts_two, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  // color attribute
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
