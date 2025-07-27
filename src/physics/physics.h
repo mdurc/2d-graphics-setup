@@ -15,6 +15,10 @@ typedef struct {
 } body_t;
 
 typedef struct {
+  aabb_t aabb;
+} static_body_t;
+
+typedef struct {
   bool is_hit;
   f32 time;
   vec2 position;
@@ -22,15 +26,21 @@ typedef struct {
 } hit_t;
 
 typedef struct {
+  f32 gravity, terminal_velocity;
+
   DYNLIST(body_t) body_list;
+  DYNLIST(static_body_t) static_body_list;
 } physics_state_internal_t;
 
 void physics_init(void);
 void physics_destroy(void);
 void physics_update(void);
+void physics_clamp_body(body_t* body);
 
-size_t physics_body_create(vec2 pos, vec2 size);
+size_t physics_body_create(vec2 position, vec2 size);
 body_t* physics_body_get(size_t idx);
+size_t physics_static_body_create(vec2 position, vec2 size);
+static_body_t* physics_static_body_get(size_t idx);
 
 void physics_aabb_min_max(vec2 min, vec2 max, aabb_t aabb);
 bool physics_point_intersect_aabb(vec2 point, aabb_t aabb);

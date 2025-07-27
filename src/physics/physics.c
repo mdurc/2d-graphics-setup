@@ -1,19 +1,116 @@
 #include "physics.h"
 
 #include "../c-lib/dynlist.h"
+#include "../c-lib/math.h"
 #include "../state.h"
 
 static physics_state_internal_t phys_state;
+static u32 iterations = 2; // computation/accurate collisions
+static f32 tick_rate;
 
-void physics_init(void) { phys_state.body_list = dynlist_create(body_t); }
+void physics_init(void) {
+  phys_state.body_list = dynlist_create(body_t);
+  phys_state.static_body_list = dynlist_create(static_body_t);
+
+  phys_state.gravity = -200;
+  phys_state.terminal_velocity = -10000;
+  tick_rate = 1.0f / iterations;
+}
 void physics_destroy(void) { dynlist_destroy(phys_state.body_list); }
+
+static hit_t sweep_static_bodies(aabb_t aabb, vec2 velocity) {
+  hit_t result = {.time = 0xBBBB};
+
+  dynlist_each(phys_state.static_body_list, static_body) {
+    aabb_t sum_aabb = static_body->aabb;
+    vec2_add(sum_aabb.half_size, sum_aabb.half_size, aabb.half_size);
+
+    hit_t hit = physics_ray_intersect_aabb(aabb.position, velocity, sum_aabb);
+    if (!hit.is_hit) {
+      continue;
+    }
+    if (hit.time < result.time) {
+      result = hit;
+    } else if (float_eq(hit.time, result.time)) {
+      // get the highest velocity axis first
+      if (fabsf(velocity[0]) > fabsf(velocity[1]) && hit.normal[0] != 0.0f) {
+        result = hit;
+      } else if (fabsf(velocity[1]) > fabsf(velocity[0]) &&
+                 hit.normal[1] != 0.0f) {
+        result = hit;
+      }
+    }
+  }
+
+  return result;
+}
+
+static void sweep_response(body_t* body, vec2 velocity) {
+  hit_t hit = sweep_static_bodies(body->aabb, velocity);
+
+  if (hit.is_hit) {
+    body->aabb.position[0] = hit.position[0];
+    body->aabb.position[1] = hit.position[1];
+
+    if (hit.normal[0] != 0.0f) {
+      body->aabb.position[1] += velocity[1];
+      body->velocity[0] = 0;
+    } else if (hit.normal[1] != 0.0f) {
+      body->aabb.position[0] += velocity[0];
+      body->velocity[1] = 0;
+    }
+  } else {
+    vec2_add(body->aabb.position, body->aabb.position, velocity);
+  }
+}
+
+static void stationary_response(body_t* body) {
+  dynlist_each(phys_state.static_body_list, static_body) {
+    aabb_t aabb =
+        physics_aabb_minkowski_difference(static_body->aabb, body->aabb);
+    vec2 min, max;
+    physics_aabb_min_max(min, max, aabb);
+
+    if (min[0] <= 0 && max[0] >= 0 && min[1] <= 0 && max[1] >= 0) {
+      vec2 penetration_vector;
+      physics_aabb_penetration_vector(penetration_vector, aabb);
+
+      vec2_add(body->aabb.position, body->aabb.position, penetration_vector);
+    }
+  }
+}
 
 void physics_update(void) {
   dynlist_each(phys_state.body_list, body) {
-    body->velocity[0] += body->acceleration[0] * state.time.delta;
-    body->velocity[1] += body->acceleration[1] * state.time.delta;
-    body->aabb.position[0] += body->velocity[0] * state.time.delta;
-    body->aabb.position[1] += body->velocity[1] * state.time.delta;
+    body->velocity[1] += phys_state.gravity;
+    if (phys_state.terminal_velocity > body->velocity[1]) {
+      body->velocity[1] = phys_state.terminal_velocity;
+    }
+
+    body->velocity[0] += body->acceleration[0];
+    body->velocity[1] += body->acceleration[1];
+
+    // we are only doing narrow phase sweep, not a broad phase sweep, which may
+    // be necessary for more performance
+    vec2 scaled_velocity;
+    vec2_scale(scaled_velocity, body->velocity, state.time.delta * tick_rate);
+    for (u32 j = 0; j < iterations; ++j) {
+      sweep_response(body, scaled_velocity);
+      stationary_response(body);
+      physics_clamp_body(body);
+    }
+  }
+}
+
+void physics_clamp_body(body_t* body) {
+  f32 x = body->aabb.position[0];
+  f32 y = body->aabb.position[1];
+  body->aabb.position[0] = clamp(x, 0, SCREEN_WIDTH);
+  body->aabb.position[1] = clamp(y, 0, SCREEN_WIDTH);
+
+  if (!float_eq(body->aabb.position[0], x) ||
+      !float_eq(body->aabb.position[1], y)) {
+    LOG("CLAMPED body position");
   }
 }
 
@@ -30,6 +127,20 @@ size_t physics_body_create(vec2 position, vec2 size) {
 body_t* physics_body_get(size_t idx) {
   ASSERT(idx < (size_t)dynlist_size(phys_state.body_list));
   return &phys_state.body_list[idx];
+}
+
+size_t physics_static_body_create(vec2 position, vec2 size) {
+  *dynlist_append(phys_state.static_body_list) = (static_body_t){
+      .aabb = {.position = {position[0], position[1]},
+               .half_size = {size[0] * 0.5f, size[1] * 0.5f}},
+  };
+
+  return dynlist_size(phys_state.static_body_list) - 1;
+}
+
+static_body_t* physics_static_body_get(size_t idx) {
+  ASSERT(idx < (size_t)dynlist_size(phys_state.static_body_list));
+  return &phys_state.static_body_list[idx];
 }
 
 void physics_aabb_min_max(vec2 min, vec2 max, aabb_t aabb) {
