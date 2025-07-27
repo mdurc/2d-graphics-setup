@@ -5,6 +5,7 @@
 #include "font.h"
 #include "physics/physics.h"
 #include "renderer/render.h"
+#include "renderer/render_init.h"
 #include "sprite_sheet/img.h"
 #include "sprite_sheet/sprite_sheet.h"
 #include "state.h"
@@ -76,6 +77,8 @@ int main(void) {
       0.5f, -0.3f, 0.0f, 0.0f, 0.0f, 1.0f  // right
   };
 
+  u32 shader_temp = render_create_shader("./src/shaders/temp.vert",
+                                         "./src/shaders/temp.frag");
   glGenVertexArrays(1, &vao_one);
   glGenBuffers(1, &vbo_one);
   glBindVertexArray(vao_one);
@@ -143,9 +146,10 @@ int main(void) {
     //               (fv2){t, t + 8.0f * state.font_sheet.scale});
 
     render_begin();
-    render_vao(vao_one);
-    render_vao(vao_two);
-    render_quad();
+    glUseProgram(shader_temp);
+    render_vao(shader_temp, vao_one);
+    render_vao(shader_temp, vao_two);
+    render_quad((vec2){0, 0}, (vec2){0, 0}, (vec4){1.0f, 0.0f, 1.0f, 1.0f});
     //   render_batch(&batch, true);
     //   render_sprite(&player, 46.0f);
     //

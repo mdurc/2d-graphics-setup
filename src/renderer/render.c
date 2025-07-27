@@ -10,10 +10,14 @@
 #include "../c-lib/misc.h"
 #include "../state.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 static u32 shader_program;
 static u32 vao_quad;
 static u32 vbo_quad;
 static u32 ebo_quad;
+static u32 texture;
 
 void render_init(u32 width, u32 height) {
   render_init_window(width, height);
@@ -25,6 +29,12 @@ void render_init(u32 width, u32 height) {
   // every shader/rendering call will now use this program (thus the shaders)
 
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
+
+  stbi_set_flip_vertically_on_load(1);
+
+  sprite_sheet_t sheet;
+  render_init_sprite_sheet(&sheet, "./res/font.png", 8, 8);
+  texture = sheet.texture_id;
 }
 
 void render_begin(void) {
@@ -37,8 +47,10 @@ void render_end(void) {
   glfwPollEvents();
 }
 
-void render_quad(void) {
+void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_program);
+
+  glUniform4fv(glGetUniformLocation(shader_program, "color"), 1, color);
 
   // the vao stores all of the vbo's linked to it
   // the vao also stores the glBindBuffer calls when the target is
@@ -46,13 +58,15 @@ void render_quad(void) {
   // buffer that we associated to it (ebo_quad)
   glBindVertexArray(vao_quad);
   // glDrawArrays(GL_TRIANGLES, 0, 3); // will draw the vertices from the vbo
+
+  glBindTexture(GL_TEXTURE_2D, texture);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // will draw from the ebo
 
   glBindVertexArray(0);
 }
 
-void render_vao(u32 vao) {
-  glUseProgram(shader_program);
+void render_vao(u32 prog, u32 vao) {
+  glUseProgram(prog);
 
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -65,7 +79,7 @@ void render_batch(sprite_t** batch, bool clear_after_render) {
   ASSERT(batch, "dynlist batch must not be null");
 
   dynlist_each(*batch, sprite) {
-    render_sprite(sprite, sprite->src_sheet->scale);
+    // render_sprite(sprite, sprite->src_sheet->scale);
   }
 
   if (clear_after_render) {

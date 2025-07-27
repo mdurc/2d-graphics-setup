@@ -6,9 +6,8 @@
 #include "img.h"
 
 typedef struct {
-  img_t img;
-  int sprite_width, sprite_height;
-  f32 scale;
+  f32 width, height, cell_width, cell_height;
+  u32 texture_id;
 } sprite_sheet_t;
 
 typedef struct {

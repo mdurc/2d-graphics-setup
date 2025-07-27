@@ -3,6 +3,7 @@
 #include "../c-lib/misc.h"
 #include "../io/io.h"
 #include "../state.h"
+#include "stb_image.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -102,11 +103,11 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
 
   // only 4 vertices here instead of 6
   f32 vertices[] = {
-      // position         // color
-      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, // top right
-      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
-      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-      -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, // top left
+      // position         // texture coordinates (uv)
+      0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
+      0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
+      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
+      -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
   };
 
   u32 idxs[] = {
@@ -128,11 +129,11 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idxs), idxs, GL_STATIC_DRAW);
 
   // position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(f32), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(f32), (void*)0);
   glEnableVertexAttribArray(0);
 
-  // color attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+  // uv texture coordinate attribute
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
@@ -144,4 +145,30 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   glBindVertexArray(0); // unbind the vao
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // for wireframe mode
+}
+
+void render_init_sprite_sheet(sprite_sheet_t* sprite_sheet, const char* path,
+                              f32 cell_width, f32 cell_height) {
+  glGenTextures(1, &sprite_sheet->texture_id);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, sprite_sheet->texture_id);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  // nearest for pixel art, GL_LINEAR for smoother textures
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  int width, height, channel_count;
+  u8* image_data = stbi_load(path, &width, &height, &channel_count, 0);
+  ASSERT(image_data, "failed to load image from stb image: %s", path);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+               GL_UNSIGNED_BYTE, image_data);
+  stbi_image_free(image_data);
+
+  sprite_sheet->width = (f32)width;
+  sprite_sheet->height = (f32)height;
+  sprite_sheet->cell_width = cell_width;
+  sprite_sheet->cell_height = cell_height;
 }

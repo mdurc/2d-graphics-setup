@@ -24,5 +24,6 @@ typedef struct ivec3 { i32 x, y, z; } iv3;
 typedef struct ivec4 { i32 x, y, z, w; } iv4;
 typedef struct fvec2 { f32 x, y; }    fv2;
 typedef struct fvec3 { f32 x, y, z; } fv3;
+typedef struct fvec4 { f32 x, y, z, w; } fv4;
 
 #endif
