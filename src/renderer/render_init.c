@@ -175,6 +175,23 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // for wireframe mode
 }
 
+void render_init_line(u32* vao, u32* vbo) {
+  glGenVertexArrays(1, vao);
+  glGenBuffers(1, vbo);
+
+  glBindVertexArray(*vao);
+  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
+  // specifying the size, but not providing any data yet, as it will be updating
+  glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(f32), NULL, GL_DYNAMIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+  glEnableVertexAttribArray(0);
+  // we do not need to add the uv texture coordinate attribute
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo
+  glBindVertexArray(0);             // unbind the vao
+}
+
 void render_init_sprite_sheet(sprite_sheet_t* sprite_sheet, const char* path,
                               f32 cell_width, f32 cell_height) {
   glGenTextures(1, &sprite_sheet->texture_id);

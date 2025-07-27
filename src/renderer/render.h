@@ -13,6 +13,9 @@ void render_begin(void);
 void render_end(void);
 
 void render_quad(vec2 pos, vec2 size, vec4 color);
+void render_quad_lines(vec2 pos, vec2 size, vec4 color);
+void render_line_segment(vec2 start, vec2 end, vec4 color);
+void render_aabb(f32* aabb, vec4 color);
 
 // for testing triangles
 void render_test_setup(u32* out_shader, u32* out_vao, f32 scale);

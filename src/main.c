@@ -91,8 +91,8 @@ int main(void) {
 
     for (int i = 0; i < body_count; ++i) {
       body_t* body = physics_body_get(i);
-      render_quad(body->aabb.position, body->aabb.half_size,
-                  (vec4){1.0f, 0.0f, 0.0f, 1.0f});
+      render_quad_lines(body->aabb.position, body->aabb.half_size,
+                        (vec4){1.0f, 0.0f, 0.0f, 1.0f});
 
       float px = body->aabb.position[0];
       float py = body->aabb.position[1];

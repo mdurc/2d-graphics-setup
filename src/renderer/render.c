@@ -13,15 +13,15 @@
 #include "stb_image.h"
 
 static u32 shader_default;
-static u32 vao_quad;
-static u32 vbo_quad;
-static u32 ebo_quad;
+static u32 vao_quad, vbo_quad, ebo_quad;
+static u32 vao_line, vbo_line;
 static u32 texture_color;
 
 void render_init(u32 width, u32 height) {
   render_init_window(width, height);
 
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
+  render_init_line(&vao_line, &vbo_line);
   render_init_color_texture(&texture_color);
   render_init_shaders(&shader_default, width, height);
 
@@ -44,8 +44,6 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_default);
 
   mat4x4 model;
-  mat4x4_identity(model);
-
   mat4x4_translate(model, pos[0], pos[1], 0);
   mat4x4_scale_aniso(model, model, size[0], size[1], 1);
 
@@ -64,6 +62,57 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // will draw from the ebo
 
   glBindVertexArray(0);
+}
+
+void render_quad_lines(vec2 pos, vec2 size, vec4 color) {
+  // using the polygon mode (much more performant)
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  render_quad(pos, size, color);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+  // vec2 points[4] = {
+  //     {pos[0] - size[0] * 0.5, pos[1] - size[1] * 0.5},
+  //     {pos[0] + size[0] * 0.5, pos[1] - size[1] * 0.5},
+  //     {pos[0] + size[0] * 0.5, pos[1] + size[1] * 0.5},
+  //     {pos[0] - size[0] * 0.5, pos[1] + size[1] * 0.5},
+  // };
+  //
+  // render_line_segment(points[0], points[1], color);
+  // render_line_segment(points[1], points[2], color);
+  // render_line_segment(points[2], points[3], color);
+  // render_line_segment(points[3], points[0], color);
+}
+
+void render_line_segment(vec2 start, vec2 end, vec4 color) {
+  glUseProgram(shader_default);
+  glLineWidth(3);
+
+  // normalize the start to end
+  f32 x = end[0] - start[0];
+  f32 y = end[1] - start[1];
+  f32 line[6] = {0.0f, 0.0f, 0.0f, x, y, 0.0f};
+
+  mat4x4 model;
+  mat4x4_translate(model, start[0], start[1], 0);
+  glUniformMatrix4fv(glGetUniformLocation(shader_default, "model"), 1, GL_FALSE,
+                     &model[0][0]);
+  glUniform4fv(glGetUniformLocation(shader_default, "color"), 1, color);
+
+  glBindTexture(GL_TEXTURE_2D, texture_color);
+  glBindVertexArray(vao_line);
+
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_line);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(line), line); // update the data
+  glDrawArrays(GL_LINES, 0, 2);                            // draw from the vbo
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind vbo
+  glBindVertexArray(0);             // unbind vao
+}
+
+void render_aabb(f32* aabb, vec4 color) {
+  vec2 size;
+  vec2_scale(size, &aabb[2], 2);
+  render_quad_lines(&aabb[0], size, color);
 }
 
 // for testing triangles
