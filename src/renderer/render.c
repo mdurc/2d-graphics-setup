@@ -1,44 +1,64 @@
 #include "render.h"
 
+#include "render_init.h"
+
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+
 #include "../c-lib/dynlist.h"
 #include "../c-lib/misc.h"
 #include "../state.h"
 
+static u32 shader_program;
+static u32 vao_quad;
+static u32 vbo_quad;
+static u32 ebo_quad;
+
 void render_init(u32 width, u32 height) {
-  ASSERT(!SDL_Init(SDL_INIT_VIDEO), "failed SDL_Init: %s\n", SDL_GetError());
+  render_init_window(width, height);
 
-  state.window =
-      SDL_CreateWindow("window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                       width, height, SDL_WINDOW_SHOWN);
-  ASSERT(state.window, "failed to create sdl window: %s\n", SDL_GetError());
+  shader_program = render_create_shader("./src/shaders/vert.glsl",
+                                        "./src/shaders/frag.glsl");
 
-  state.renderer = SDL_CreateRenderer(
-      state.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-  ASSERT(state.renderer, "failed to create sdl renderer: %s\n", SDL_GetError());
+  glUseProgram(shader_program);
+  // every shader/rendering call will now use this program (thus the shaders)
+
+  render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
 }
 
 void render_begin(void) {
-  SDL_SetRenderDrawColor(state.renderer, 0x00, 0x00, 0x00, 0xFF);
-  SDL_RenderClear(state.renderer);
+  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void render_end(void) { SDL_RenderPresent(state.renderer); }
-
-void render_sprite(sprite_t* sprite, f32 scale) {
-  ASSERT(sprite->src_sheet, "src sprite sheet cannot be null for a sprite");
-  int sw = sprite->src_sheet->sprite_width;
-  int sh = sprite->src_sheet->sprite_height;
-  SDL_Rect src = {.x = sprite->src_idx.x * sw,
-                  .y = sprite->src_idx.y * sh,
-                  .w = sw,
-                  .h = sh};
-  SDL_Rect dst_px_pos = {.x = (int)(sprite->dst_px.x),
-                         .y = (int)(sprite->dst_px.y),
-                         .w = (int)(sw * scale),
-                         .h = (int)(sh * scale)};
-  SDL_RenderCopyEx(state.renderer, sprite->src_sheet->img.texture, &src,
-                   &dst_px_pos, sprite->rotation, NULL, SDL_FLIP_NONE);
+void render_end(void) {
+  glfwSwapBuffers(state.window);
+  glfwPollEvents();
 }
+
+void render_quad(void) {
+  glUseProgram(shader_program);
+
+  // the vao stores all of the vbo's linked to it
+  // the vao also stores the glBindBuffer calls when the target is
+  // GL_ELEMENT_ARRAY, so when we bind this vao, it will also bind the ebo
+  // buffer that we associated to it (ebo_quad)
+  glBindVertexArray(vao_quad);
+  // glDrawArrays(GL_TRIANGLES, 0, 3); // will draw the vertices from the vbo
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // will draw from the ebo
+
+  glBindVertexArray(0);
+}
+
+void render_vao(u32 vao) {
+  glUseProgram(shader_program);
+  glBindVertexArray(vao);
+  glDrawArrays(GL_TRIANGLES, 0, 3);
+  glBindVertexArray(0);
+}
+
+void render_sprite(sprite_t* sprite, f32 scale) {}
 
 void render_batch(sprite_t** batch, bool clear_after_render) {
   ASSERT(batch, "dynlist batch must not be null");

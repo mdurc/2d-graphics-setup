@@ -10,6 +10,10 @@
 #include "state.h"
 #include "time.h"
 
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+
 static bool should_quit = false;
 static fv2 pos;
 static input_key_t last_dir = INPUT_KEY_LEFT;
@@ -40,21 +44,55 @@ static void input_handle(void) {
 }
 
 int main(void) {
-  time_init(60);
-  config_init();
+  // time_init(60);
+  // config_init();
   render_init(SCREEN_WIDTH, SCREEN_HEIGHT);
-  physics_init();
-  state_init();
+  // physics_init();
+  // state_init();
 
-  int body_count = 500;
-  for (int i = 0; i < body_count; ++i) {
-    size_t idx = physics_body_create(
-        (fv2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT},
-        (fv2){rand() % 5, rand() % 5});
-    body_t* body = physics_body_get(idx);
-    body->acceleration.x = rand() % 200 - 100;
-    body->acceleration.y = rand() % 200 - 100;
-  }
+  // int body_count = 500;
+  // for (int i = 0; i < body_count; ++i) {
+  //   size_t idx = physics_body_create(
+  //       (fv2){rand() % SCREEN_WIDTH, rand() % SCREEN_HEIGHT},
+  //       (fv2){rand() % 5, rand() % 5});
+  //   body_t* body = physics_body_get(idx);
+  //   body->acceleration.x = rand() % 200 - 100;
+  //   body->acceleration.y = rand() % 200 - 100;
+  // }
+
+  u32 vao_one, vbo_one;
+  f32 verts_one[] = {
+      -0.9f, -0.3f, 0.0f, //
+      -0.7f, 0.3f,  0.0f, //
+      -0.5f, -0.3f, 0.0f  //
+  };
+
+  u32 vao_two, vbo_two;
+  f32 verts_two[] = {
+      0.9f, -0.3f, 0.0f, //
+      0.7f, 0.3f,  0.0f, //
+      0.5f, -0.3f, 0.0f  //
+  };
+
+  glGenVertexArrays(1, &vao_one);
+  glGenBuffers(1, &vbo_one);
+  glBindVertexArray(vao_one);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_one);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(verts_one), verts_one, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+
+  glGenVertexArrays(1, &vao_two);
+  glGenBuffers(1, &vbo_two);
+  glBindVertexArray(vao_two);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_two);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(verts_two), verts_two, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 
   pos = (fv2){SCREEN_WIDTH / 2.0f - 100, SCREEN_HEIGHT / 2.0f - 100};
 
@@ -65,66 +103,65 @@ int main(void) {
       "\n!@#$%^&*()_+="
       "\n,./<>?;':\"[]";
 
-  while (!should_quit) {
-    time_update();
+  while (!glfwWindowShouldClose(state.window)) {
+    // time_update();
 
-    SDL_Event ev;
+    // SDL_Event ev;
 
-    while (SDL_PollEvent(&ev)) {
-      switch (ev.type) {
-        case SDL_QUIT: should_quit = true; break;
-        default: break;
-      }
+    if (glfwGetKey(state.window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+      glfwSetWindowShouldClose(state.window, true);
     }
 
-    input_update();
-    input_handle();
-    physics_update();
+    // input_update();
+    // input_handle();
+    // physics_update();
 
-    sprite_t player = {.src_idx = (iv2){animation_idx, 0},
-                       .dst_px = pos,
-                       .rotation = 0.0f,
-                       .src_sheet = &state.bg_sheet};
+    // sprite_t player = {.src_idx = (iv2){animation_idx, 0},
+    //                    .dst_px = pos,
+    //                    .rotation = 0.0f,
+    //                    .src_sheet = &state.bg_sheet};
 
     f32 t = 100.0f + (cosf(time_s()) * 100.0f);
 
-    DYNLIST(sprite_t) batch = dynlist_create(sprite_t);
+    // DYNLIST(sprite_t) batch = dynlist_create(sprite_t);
 
-    push_background(&batch, &state.bg_sheet);
-    push_font_ch(&batch, &state.font_sheet, 'A', (fv2){t, t});
-    push_font_str(&batch, &state.font_sheet, msg,
-                  (fv2){t, t + 8.0f * state.font_sheet.scale});
+    // push_background(&batch, &state.bg_sheet);
+    // push_font_ch(&batch, &state.font_sheet, 'A', (fv2){t, t});
+    // push_font_str(&batch, &state.font_sheet, msg,
+    //               (fv2){t, t + 8.0f * state.font_sheet.scale});
 
     render_begin();
-    render_batch(&batch, true);
-    render_sprite(&player, 46.0f);
-
-    for (int i = 0; i < body_count; ++i) {
-      body_t* body = physics_body_get(i);
-      body->acceleration.x = rand() % 200 - 100;
-      body->acceleration.y = rand() % 200 - 100;
-
-      sprite_sheet_t* bg = &state.bg_sheet;
-
-      sprite_t block = {.src_idx = (iv2){6, 6},
-                        .dst_px = (fv2){body->aabb.pos.x, body->aabb.pos.y},
-                        .rotation = 0,
-                        .src_sheet = bg};
-
-      f32 scale = 3.0f;
-      render_sprite(&block, scale);
-
-      if (body->aabb.pos.x > (SCREEN_WIDTH - bg->sprite_width * scale) ||
-          body->aabb.pos.x < 0)
-        body->velocity.x *= -1;
-      if (body->aabb.pos.y > (SCREEN_HEIGHT - bg->sprite_height * scale) ||
-          body->aabb.pos.y < 0)
-        body->velocity.y *= -1;
-      if (body->velocity.x > 500) body->velocity.x = 500;
-      if (body->velocity.y > 500) body->velocity.y = 500;
-      if (body->velocity.x < -500) body->velocity.x = -500;
-      if (body->velocity.y < -500) body->velocity.y = -500;
-    }
+    render_vao(vao_one);
+    render_vao(vao_two);
+    render_quad();
+    //   render_batch(&batch, true);
+    //   render_sprite(&player, 46.0f);
+    //
+    //   for (int i = 0; i < body_count; ++i) {
+    //     body_t* body = physics_body_get(i);
+    //     body->acceleration.x = rand() % 200 - 100;
+    //     body->acceleration.y = rand() % 200 - 100;
+    //
+    //     sprite_sheet_t* bg = &state.bg_sheet;
+    //
+    //     sprite_t block = {.src_idx = (iv2){6, 6},
+    //                       .dst_px = (fv2){body->aabb.pos.x,
+    //                       body->aabb.pos.y}, .rotation = 0, .src_sheet = bg};
+    //
+    //     f32 scale = 3.0f;
+    //     render_sprite(&block, scale);
+    //
+    //     if (body->aabb.pos.x > (SCREEN_WIDTH - bg->sprite_width * scale) ||
+    //         body->aabb.pos.x < 0)
+    //       body->velocity.x *= -1;
+    //     if (body->aabb.pos.y > (SCREEN_HEIGHT - bg->sprite_height * scale) ||
+    //         body->aabb.pos.y < 0)
+    //       body->velocity.y *= -1;
+    //     if (body->velocity.x > 500) body->velocity.x = 500;
+    //     if (body->velocity.y > 500) body->velocity.y = 500;
+    //     if (body->velocity.x < -500) body->velocity.x = -500;
+    //     if (body->velocity.y < -500) body->velocity.y = -500;
+    //   }
 
     render_end();
   }

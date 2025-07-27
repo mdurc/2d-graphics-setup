@@ -10,8 +10,7 @@
 #define _ASSERTX(_e, _expr, _fmt, ...)      \
   do {                                      \
     if (!(_e)) {                            \
-      ERROR("(assertion expr %s)", _expr);  \
-      ERROR((_fmt), ##__VA_ARGS__);         \
+      ERROR("assertion failed: (%s): " _fmt, _expr, ##__VA_ARGS__); \
       exit(1);                              \
     }                                       \
   } while (0)

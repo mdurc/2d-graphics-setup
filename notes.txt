@@ -18,4 +18,5 @@
 - Entity Component System (ECS)
 - physics system
   - 2D collision detection (AABB, circle, polygon)
+  - minkowski difference
 - scene management, loading/unloading

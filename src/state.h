@@ -1,17 +1,18 @@
 #pragma once
 
-#include <SDL2/SDL.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 
 #include "config/config.h"
 #include "sprite_sheet/img.h"
 #include "sprite_sheet/sprite_sheet.h"
 #include "time.h"
 
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 720
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
 
 typedef struct state { // for forward declaration
-  SDL_Window* window;
+  GLFWwindow* window;
   SDL_Renderer* renderer;
 
   sprite_sheet_t font_sheet;
