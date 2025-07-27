@@ -8,18 +8,19 @@ void physics_init(void) { phys_state.body_list = dynlist_create(body_t); }
 
 void physics_update(void) {
   dynlist_each(phys_state.body_list, body) {
-    body->velocity.x += body->acceleration.x * state.time.delta;
-    body->velocity.y += body->acceleration.y * state.time.delta;
-    body->aabb.pos.x += body->velocity.x * state.time.delta;
-    body->aabb.pos.y += body->velocity.y * state.time.delta;
+    body->velocity[0] += body->acceleration[0] * state.time.delta;
+    body->velocity[1] += body->acceleration[1] * state.time.delta;
+    body->aabb.position[0] += body->velocity[0] * state.time.delta;
+    body->aabb.position[1] += body->velocity[1] * state.time.delta;
   }
 }
 
-size_t physics_body_create(fv2 pos, fv2 size) {
-  *dynlist_append(phys_state.body_list) = (body_t){
-      .aabb = {.pos = pos, .half_size = {size.x * 0.5f, size.y * 0.5f}},
-      .velocity = {0, 0},
-      .acceleration = {0, 0}};
+size_t physics_body_create(vec2 position, vec2 size) {
+  *dynlist_append(phys_state.body_list) =
+      (body_t){.aabb = {.position = {position[0], position[1]},
+                        .half_size = {size[0] * 0.5f, size[1] * 0.5f}},
+               .velocity = {0, 0},
+               .acceleration = {0, 0}};
 
   return dynlist_size(phys_state.body_list) - 1;
 }

@@ -1,10 +1,9 @@
 #pragma once
 
 #include "../c-lib/types.h"
-#include "../sprite_sheet/sprite_sheet.h"
+#include "render.h"
 
 void render_init_window(u32 width, u32 height);
-u32 render_create_shader(const char* path_vert, const char* path_frag);
 void render_init_shaders(u32* shader_program, f32 render_width,
                          f32 render_height);
 void render_init_color_texture(u32* texture);

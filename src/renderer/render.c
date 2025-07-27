@@ -6,7 +6,6 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-#include "../c-lib/dynlist.h"
 #include "../c-lib/misc.h"
 #include "../state.h"
 
@@ -39,10 +38,7 @@ void render_begin(void) {
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void render_end(void) {
-  glfwSwapBuffers(state.window);
-  glfwPollEvents();
-}
+void render_end(void) { glfwSwapBuffers(state.window); }
 
 void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_default);
@@ -70,24 +66,84 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glBindVertexArray(0);
 }
 
-void render_vao(u32 prog, u32 vao) {
-  glUseProgram(prog);
+// for testing triangles
+void render_test_setup(u32* out_shader, u32* out_vao, f32 scale) {
+  int success;
+  char log[512];
+  const char* vert_src =
+      "#version 330 core\n"
+      "layout (location = 0) in vec3 a_pos;\n"
+      "layout (location = 1) in vec3 a_color;\n"
+      "out vec3 color;\n"
+      "void main() {\n"
+      "color = a_color;\n"
+      "gl_Position = vec4(a_pos, 1.0f);\n"
+      "}";
+  const char* frag_src =
+      "#version 330 core\n"
+      "out vec4 frag_color;\n"
+      "in vec3 color;\n"
+      "void main() {\n"
+      "frag_color = vec4(color, 1.0f);\n"
+      "}";
 
-  glBindVertexArray(vao);
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  u32 shader_vertex = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(shader_vertex, 1, &vert_src, NULL);
+  glCompileShader(shader_vertex);
+  glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader_vertex, 512, NULL, log);
+    ERROR_EXIT("error compiling vertex shader. %s\n", log);
+  }
+  u32 shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(shader_fragment, 1, &frag_src, NULL);
+  glCompileShader(shader_fragment);
+  glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader_fragment, 512, NULL, log);
+    ERROR_EXIT("error compiling fragment shader. %s\n", log);
+  }
+
+  *out_shader = glCreateProgram();
+  glAttachShader(*out_shader, shader_vertex);
+  glAttachShader(*out_shader, shader_fragment);
+  glLinkProgram(*out_shader);
+  glGetProgramiv(*out_shader, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(*out_shader, 512, NULL, log);
+    ERROR_EXIT("error linking shader. %s\n", log);
+  }
+  glUseProgram(*out_shader);
+  glDeleteShader(shader_vertex);
+  glDeleteShader(shader_fragment);
+
+  f32 vertices[] = {
+      // position         // color
+      scale * 0.9f, -0.3f, 0.0f, 1.0f, 0.0f, 0.0f, // left
+      scale * 0.7f, 0.3f,  0.0f, 0.0f, 1.0f, 0.0f, // top
+      scale * 0.5f, -0.3f, 0.0f, 0.0f, 0.0f, 1.0f  // right
+  };
+
+  glGenVertexArrays(1, out_vao);
+  u32 vbo;
+  glGenBuffers(1, &vbo);
+  glBindVertexArray(*out_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  // color attribute
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 }
 
-void render_sprite(sprite_t* sprite, f32 scale) {}
-
-void render_batch(sprite_t** batch, bool clear_after_render) {
-  ASSERT(batch, "dynlist batch must not be null");
-
-  dynlist_each(*batch, sprite) {
-    // render_sprite(sprite, sprite->src_sheet->scale);
-  }
-
-  if (clear_after_render) {
-    dynlist_clear(batch);
-  }
+void render_test_triangle(u32 shader, u32 vao) {
+  glUseProgram(shader);
+  glBindVertexArray(vao);
+  glDrawArrays(GL_TRIANGLES, 0, 3);
+  glBindVertexArray(0);
 }

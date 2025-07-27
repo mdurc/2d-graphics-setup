@@ -52,7 +52,7 @@ void render_init_window(u32 width, u32 height) {
   printf("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 }
 
-u32 render_create_shader(const char* path_vert, const char* path_frag) {
+static u32 render_create_shader(const char* path_vert, const char* path_frag) {
   int success;
   char log[512];
 

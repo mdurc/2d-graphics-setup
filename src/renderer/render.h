@@ -1,16 +1,19 @@
 #pragma once
 
-#include <SDL2/SDL.h>
-
 #include "../c-lib/types.h"
-#include "../sprite_sheet/sprite_sheet.h"
 #include "linmath.h"
+
+typedef struct {
+  f32 width, height, cell_width, cell_height;
+  u32 texture_id;
+} sprite_sheet_t;
 
 void render_init(u32 width, u32 height);
 void render_begin(void);
 void render_end(void);
 
-void render_vao(u32 prog, u32 vao);
 void render_quad(vec2 pos, vec2 size, vec4 color);
-void render_sprite(sprite_t* sprite, f32 scale);
-void render_batch(sprite_t** batch, bool clear_after_render);
+
+// for testing triangles
+void render_test_setup(u32* out_shader, u32* out_vao, f32 scale);
+void render_test_triangle(u32 shader, u32 vao);

@@ -5,7 +5,6 @@
 #include "../c-lib/misc.h"
 #include "../io/io.h"
 #include "../state.h"
-#include "SDL_keyboard.h"
 
 #define TMP_BUF_SIZE 20
 
@@ -43,6 +42,15 @@ static char* config_get_value(const char* conf_buf, const char* value) {
   return tmp_buf;
 }
 
+static int key_from_name(const char* name) {
+  if (strcmp(name, "Left") == 0) return GLFW_KEY_LEFT;
+  if (strcmp(name, "Right") == 0) return GLFW_KEY_RIGHT;
+  if (strcmp(name, "Up") == 0) return GLFW_KEY_UP;
+  if (strcmp(name, "Down") == 0) return GLFW_KEY_DOWN;
+  if (strcmp(name, "Escape") == 0) return GLFW_KEY_ESCAPE;
+  return -1;
+}
+
 static void config_load_controls(const char* conf_buf) {
   config_key_bind(INPUT_KEY_LEFT, config_get_value(conf_buf, "left"));
   config_key_bind(INPUT_KEY_RIGHT, config_get_value(conf_buf, "right"));
@@ -72,9 +80,10 @@ void config_init(void) {
 }
 
 void config_key_bind(input_key_t key, const char* key_name) {
-  SDL_Scancode scan_code = SDL_GetScancodeFromName(key_name);
-  if (scan_code == SDL_SCANCODE_UNKNOWN) {
-    ERROR_RETURN(, "invalid scan code when binding key: %s\n", key_name);
+  int key_code = key_from_name(key_name);
+  if (key_code == -1) {
+    ERROR_RETURN(, "invalid key name when binding key: %s\n", key_name);
   }
-  state.config.keybinds[key] = scan_code;
+
+  state.config.keybinds[key] = key_code;
 }

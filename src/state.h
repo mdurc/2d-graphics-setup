@@ -4,8 +4,6 @@
 #include <GLFW/glfw3.h>
 
 #include "config/config.h"
-#include "sprite_sheet/img.h"
-#include "sprite_sheet/sprite_sheet.h"
 #include "time.h"
 
 #define SCREEN_WIDTH 800
@@ -13,10 +11,6 @@
 
 typedef struct state { // for forward declaration
   GLFWwindow* window;
-  SDL_Renderer* renderer;
-
-  sprite_sheet_t font_sheet;
-  sprite_sheet_t bg_sheet;
 
   config_t config;
   input_state_t input;

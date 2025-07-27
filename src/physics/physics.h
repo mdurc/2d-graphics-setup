@@ -1,17 +1,17 @@
 #pragma once
 
 #include "../c-lib/dynlist.h"
-#include "../c-lib/types.h"
+#include "linmath.h"
 
 typedef struct {
-  fv2 pos;
-  fv2 half_size;
+  vec2 position;
+  vec2 half_size;
 } aabb_t;
 
 typedef struct {
   aabb_t aabb;
-  fv2 velocity;
-  fv2 acceleration;
+  vec2 velocity;
+  vec2 acceleration;
 } body_t;
 
 typedef struct {
@@ -21,5 +21,5 @@ typedef struct {
 void physics_init(void);
 void physics_update(void);
 
-size_t physics_body_create(fv2 pos, fv2 size);
+size_t physics_body_create(vec2 pos, vec2 size);
 body_t* physics_body_get(size_t idx);

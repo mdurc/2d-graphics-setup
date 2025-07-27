@@ -1,10 +1,12 @@
 #include "input.h"
 
-#include "../c-lib/types.h"
 #include "../state.h"
-#include "SDL_keyboard.h"
 
-static void update_key_state(u8 current_state, key_state_t* key_state) {
+#define MAX_KEYS GLFW_KEY_LAST + 1
+static bool key_current[MAX_KEYS] = {0};
+static bool key_previous[MAX_KEYS] = {0};
+
+static void update_key_state(bool current_state, key_state_t* key_state) {
   if (current_state) {
     if (*key_state > 0) {
       *key_state = KS_HELD;
@@ -17,16 +19,21 @@ static void update_key_state(u8 current_state, key_state_t* key_state) {
 }
 
 void input_update(void) {
-  const u8* keyboard_state = SDL_GetKeyboardState(NULL);
+  glfwPollEvents();
 
-  update_key_state(keyboard_state[state.config.keybinds[INPUT_KEY_LEFT]],
+  memcpy(key_previous, key_current, sizeof(key_current));
+  for (int key = 0; key < MAX_KEYS; ++key) {
+    key_current[key] = glfwGetKey(state.window, key) == GLFW_PRESS;
+  }
+
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_LEFT]],
                    &state.input.left);
-  update_key_state(keyboard_state[state.config.keybinds[INPUT_KEY_RIGHT]],
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_RIGHT]],
                    &state.input.right);
-  update_key_state(keyboard_state[state.config.keybinds[INPUT_KEY_UP]],
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_UP]],
                    &state.input.up);
-  update_key_state(keyboard_state[state.config.keybinds[INPUT_KEY_DOWN]],
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_DOWN]],
                    &state.input.down);
-  update_key_state(keyboard_state[state.config.keybinds[INPUT_KEY_ESCAPE]],
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_ESCAPE]],
                    &state.input.escape);
 }

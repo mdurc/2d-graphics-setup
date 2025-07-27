@@ -4,7 +4,7 @@
 #include "../io/input.h"
 
 typedef struct {
-  u8 keybinds[5];
+  u32 keybinds[5];
 } config_t;
 
 void config_init(void);
