@@ -6,9 +6,6 @@
 #include "config/config.h"
 #include "time.h"
 
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 720
-
 typedef struct state { // for forward declaration
   GLFWwindow* window;
 

@@ -100,17 +100,24 @@ static u32 render_create_shader(const char* path_vert, const char* path_frag) {
   return shader_program;
 }
 
-void render_init_shaders(u32* shader_program, f32 render_width,
-                         f32 render_height) {
+void render_init_shaders(u32* shader_program, u32* shader_batch,
+                         f32 render_width, f32 render_height) {
   mat4x4 projection;
   *shader_program = render_create_shader("./src/shaders/vert.glsl",
                                          "./src/shaders/frag.glsl");
+  *shader_batch = render_create_shader("./src/shaders/batch_vert.glsl",
+                                       "./src/shaders/batch_frag.glsl");
 
-  // orthographic camera view
+  // orthographic camera view to get the pixel size we want, and applying the
+  // projection to the entire window.
   mat4x4_ortho(projection, 0, render_width, 0, render_height, -2, 2);
 
   glUseProgram(*shader_program);
   glUniformMatrix4fv(glGetUniformLocation(*shader_program, "projection"), 1,
+                     GL_FALSE, &projection[0][0]);
+
+  glUseProgram(*shader_batch);
+  glUniformMatrix4fv(glGetUniformLocation(*shader_batch, "projection"), 1,
                      GL_FALSE, &projection[0][0]);
 }
 
@@ -167,14 +174,55 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
                         (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo, we linked it with attrib
-
   // do NOT unbind the EBO while a VAO is active as the bound element
   // buffer object IS stored in the VAO; keep the EBO bound.
-
-  glBindVertexArray(0); // unbind the vao
+  glBindVertexArray(0);                     // unbind vao
+  glBindBuffer(GL_ARRAY_BUFFER, 0);         // unbind vbo
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // unbind ebo
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // for wireframe mode
+}
+
+void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
+  glGenVertexArrays(1, vao);
+  glBindVertexArray(*vao);
+
+  u32 indices[MAX_BATCH_ELEMENTS];
+  for (u32 i = 0, offset = 0; i < MAX_BATCH_ELEMENTS; i += 6, offset += 4) {
+    indices[i + 0] = offset + 0;
+    indices[i + 1] = offset + 1;
+    indices[i + 2] = offset + 2;
+    indices[i + 3] = offset + 2;
+    indices[i + 4] = offset + 3;
+    indices[i + 5] = offset + 0;
+  }
+
+  glGenBuffers(1, vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
+  glBufferData(GL_ARRAY_BUFFER, MAX_BATCH_VERTICES * sizeof(batch_vertex_t),
+               NULL, GL_DYNAMIC_DRAW);
+  // vbo data is NULL, as we will be updating the contents at each frame,
+  // thus we want touse GL_DYNAMIC_DRAW, just like with the line segments
+
+  // [x, y], [u, v], [r, g, b, a], [texture_slot]
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
+                        (void*)offsetof(batch_vertex_t, position));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
+                        (void*)offsetof(batch_vertex_t, tex_coords));
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
+                        (void*)offsetof(batch_vertex_t, color));
+
+  glGenBuffers(1, ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_BATCH_ELEMENTS * sizeof(u32),
+               indices, GL_STATIC_DRAW);
+
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void render_init_line(u32* vao, u32* vbo) {
@@ -190,8 +238,8 @@ void render_init_line(u32* vao, u32* vbo) {
   glEnableVertexAttribArray(0);
   // we do not need to add the uv texture coordinate attribute
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo
   glBindVertexArray(0);             // unbind the vao
+  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo
 }
 
 void render_init_sprite_sheet(sprite_sheet_t* sprite_sheet, const char* path,

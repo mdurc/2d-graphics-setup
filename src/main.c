@@ -20,6 +20,8 @@ typedef enum collision_layer {
   COLLISION_LAYER_TERRAIN = 1 << 2,
 } collision_layer_t;
 
+f32 scale = 3.0f;
+
 vec4 player_color = {0, 1, 1, 1};
 bool player_is_grounded = false;
 
@@ -37,20 +39,16 @@ static void input_handle(body_t* body_player) {
 
   f32 velx = 0, vely = body_player->velocity[1];
   if (state.input.right > 0) {
-    velx += 1000;
+    velx += 1000 / scale;
   }
 
   if (state.input.left > 0) {
-    velx -= 1000;
+    velx -= 1000 / scale;
   }
 
   if (state.input.up > 0 && player_is_grounded) {
-    vely = 4000;
+    vely = 4000 / scale;
     player_is_grounded = false;
-  }
-
-  if (state.input.down > 0) {
-    vely -= 800;
   }
 
   body_player->velocity[0] = velx;
@@ -72,18 +70,18 @@ void player_on_hit_static(body_t* self, static_body_t* other, hit_t hit) {
 
 void enemy_on_hit_static(body_t* self, static_body_t* other, hit_t hit) {
   if (hit.normal[0] > 0) {
-    self->velocity[0] = 700;
+    self->velocity[0] = 700 / scale;
   }
 
   if (hit.normal[0] < 0) {
-    self->velocity[0] = -700;
+    self->velocity[0] = -700 / scale;
   }
 }
 
 int main(void) {
   time_init(60);
   config_init();
-  render_init(SCREEN_WIDTH, SCREEN_HEIGHT);
+  render_init(1280, 720, scale);
   physics_init();
   entity_init();
   state_init();
@@ -94,33 +92,46 @@ int main(void) {
 
   u8 enemy_mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_TERRAIN;
   u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
+
+  fv2 render_size = render_get_render_size();
+  f32 width = render_size.x;
+  f32 height = render_size.y;
+  f32 player_size = 18;
+  f32 margin = 12; // from the center
+  f32 thickness = 36 / scale;
+
   size_t player_id = entity_create(
-      (vec2){550, 500}, (vec2){50, 50}, (vec2){0, 0}, COLLISION_LAYER_PLAYER,
+      (vec2){width * 0.5f + player_size * 3, height * 0.5},
+      (vec2){player_size, player_size}, (vec2){0, 0}, COLLISION_LAYER_PLAYER,
       player_mask, player_on_hit, player_on_hit_static);
 
-  f32 width = SCREEN_WIDTH, height = SCREEN_HEIGHT;
   size_t static_body_a_id = physics_static_body_create(
-      (vec2){width * 0.5 - 25, height - 25}, (vec2){width - 50, 50},
-      COLLISION_LAYER_TERRAIN);
+      (vec2){width * 0.5, height - margin}, (vec2){width - 1, thickness},
+      COLLISION_LAYER_TERRAIN); // top boarder
   size_t static_body_b_id = physics_static_body_create(
-      (vec2){width - 25, height * 0.5 + 25}, (vec2){50, height - 50},
-      COLLISION_LAYER_TERRAIN);
+      (vec2){width - margin, height * 0.5}, (vec2){thickness, height - 1},
+      COLLISION_LAYER_TERRAIN); // left border
   size_t static_body_c_id = physics_static_body_create(
-      (vec2){width * 0.5 + 25, 25}, (vec2){width - 50, 50},
-      COLLISION_LAYER_TERRAIN);
+      (vec2){width * 0.5, margin}, (vec2){width - 1, thickness},
+      COLLISION_LAYER_TERRAIN); // bottom border
   size_t static_body_d_id = physics_static_body_create(
-      (vec2){25, height * 0.5 - 25}, (vec2){50, height - 50},
-      COLLISION_LAYER_TERRAIN);
+      (vec2){margin, height * 0.5}, (vec2){thickness, height - 1},
+      COLLISION_LAYER_TERRAIN); // left border
   size_t static_body_e_id =
       physics_static_body_create((vec2){width * 0.5, height * 0.5},
-                                 (vec2){150, 150}, COLLISION_LAYER_TERRAIN);
+                                 (vec2){player_size * 3, player_size * 3},
+                                 COLLISION_LAYER_TERRAIN); // center box
 
-  size_t entity_a_id = entity_create((vec2){200, 600}, (vec2){25, 25},
-                                     (vec2){900, 0}, COLLISION_LAYER_ENEMY,
-                                     enemy_mask, NULL, enemy_on_hit_static);
-  size_t entity_b_id = entity_create((vec2){500, 500}, (vec2){25, 25},
-                                     (vec2){900, 0}, COLLISION_LAYER_ENEMY,
-                                     enemy_mask, NULL, enemy_on_hit_static);
+  vec2 enemy_size = (vec2){player_size * 0.5, player_size * 0.5};
+  size_t entity_a_id = entity_create(
+      (vec2){width * 0.5 - 50, height * 0.5}, enemy_size, (vec2){400, 0},
+      COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
+  size_t entity_b_id = entity_create(
+      (vec2){width * 0.5 + 50, height * 0.5}, enemy_size, (vec2){400, 0},
+      COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
+
+  sprite_sheet_t bg_sheet;
+  render_init_sprite_sheet(&bg_sheet, "./res/bg.png", 8, 8);
 
   while (!glfwWindowShouldClose(state.window)) {
     time_update();
@@ -145,8 +156,8 @@ int main(void) {
     // render_test_triangle(shader_temp, vao_two);
     //
     //// center quad
-    // render_quad((vec2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f},
-    //             (vec2){SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f},
+    // render_quad((vec2){width * 0.5f, height * 0.5f},
+    //             (vec2){width * 0.5f, height * 0.5f},
     //             (vec4){0.0f, 0.0f, 1.0f, 1.0f});
 
     render_aabb((f32*)&static_body_a->aabb, WHITE);
@@ -161,7 +172,10 @@ int main(void) {
     render_aabb((f32*)physics_body_get(entity_get(entity_b_id)->body_id),
                 WHITE);
 
-    render_end();
+    render_sprite_sheet_frame(&bg_sheet, 0, 1, body_player->aabb.position,
+                              (vec2){player_size, player_size});
+
+    render_end(bg_sheet.texture_id);
 
     player_color[0] = 0;
     player_color[2] = 1;

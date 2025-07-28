@@ -2,6 +2,7 @@
 
 #include "../c-lib/dynlist.h"
 #include "../c-lib/math.h"
+#include "../renderer/render.h"
 #include "../state.h"
 
 static physics_state_internal_t phys_state;
@@ -12,8 +13,8 @@ void physics_init(void) {
   phys_state.body_list = dynlist_create(body_t);
   phys_state.static_body_list = dynlist_create(static_body_t);
 
-  phys_state.gravity = -200;
-  phys_state.terminal_velocity = -10000;
+  phys_state.gravity = -100;
+  phys_state.terminal_velocity = -7000;
   tick_rate = 1.0f / iterations;
 }
 void physics_destroy(void) { dynlist_destroy(phys_state.body_list); }
@@ -144,8 +145,10 @@ void physics_update(void) {
 void physics_clamp_body(body_t* body) {
   f32 x = body->aabb.position[0];
   f32 y = body->aabb.position[1];
-  body->aabb.position[0] = clamp(x, 0, SCREEN_WIDTH);
-  body->aabb.position[1] = clamp(y, 0, SCREEN_WIDTH);
+  fv2 render_size = render_get_render_size();
+
+  body->aabb.position[0] = clamp(x, 0, render_size.x);
+  body->aabb.position[1] = clamp(y, 0, render_size.y);
 
   if (!float_eq(body->aabb.position[0], x) ||
       !float_eq(body->aabb.position[1], y)) {

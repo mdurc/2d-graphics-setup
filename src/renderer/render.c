@@ -1,5 +1,6 @@
 #include "render.h"
 
+#include "../c-lib/dynlist.h"
 #include "render_init.h"
 
 #define GLFW_INCLUDE_NONE
@@ -12,33 +13,100 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-static u32 shader_default;
+static f32 render_width, render_height;
+static f32 render_scale;
+
+static u32 shader_default, shader_batch;
 static u32 vao_quad, vbo_quad, ebo_quad;
 static u32 vao_line, vbo_line;
+static u32 vao_batch, vbo_batch, ebo_batch;
 static u32 texture_color;
 
-void render_init(u32 width, u32 height) {
+static DYNLIST(batch_vertex_t) batch_list;
+
+void render_init(u32 width, u32 height, f32 scale) {
   render_init_window(width, height);
+  render_scale = scale;
+  render_width = width / scale;
+  render_height = height / scale;
 
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
+  render_init_batch_quads(&vao_batch, &vbo_batch, &ebo_batch);
   render_init_line(&vao_line, &vbo_line);
   render_init_color_texture(&texture_color);
-  render_init_shaders(&shader_default, width, height);
+  render_init_shaders(&shader_default, &shader_batch, render_width,
+                      render_height);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   stbi_set_flip_vertically_on_load(1);
 
-  glUseProgram(shader_default);
-  sprite_sheet_t sheet;
-  render_init_sprite_sheet(&sheet, "./res/font.png", 8, 8);
-  // texture_color = sheet.texture_id;
+  batch_list = dynlist_create(batch_vertex_t, 8);
 }
 
 void render_begin(void) {
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
+  dynlist_clear(batch_list); // clear the list each frame
 }
 
-void render_end(void) { glfwSwapBuffers(state.window); }
+static void render_batch(batch_vertex_t* vertices, size_t num_vertices,
+                         u32 texture_id) {
+  // update the vbo buffer dynamically
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertices * sizeof(batch_vertex_t),
+                  vertices);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture_id);
+
+  glUseProgram(shader_batch);
+  glBindVertexArray(vao_batch);
+  // the amount of quads we are drawing is count / 4, with six indices per quad
+  glDrawElements(GL_TRIANGLES, (num_vertices >> 2) * 6, GL_UNSIGNED_INT, NULL);
+}
+
+static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color) {
+  vec4 tex_data = {0, 0, 1, 1}; // default data
+
+  if (tex_coords != NULL) {
+    memcpy(tex_data, tex_coords, sizeof(vec4));
+  }
+  // append the four vertices of the quad into the batch list
+  // top left
+  *dynlist_append(batch_list) = (batch_vertex_t){
+      .position = {position[0], position[1]},
+      .tex_coords = {tex_data[0], tex_data[1]},
+      .color = {color[0], color[1], color[2], color[3]},
+  };
+
+  // top right
+  *dynlist_append(batch_list) = (batch_vertex_t){
+      .position = {position[0] + size[0], position[1]},
+      .tex_coords = {tex_data[2], tex_data[1]},
+      .color = {color[0], color[1], color[2], color[3]},
+  };
+
+  // bottom right
+  *dynlist_append(batch_list) = (batch_vertex_t){
+      .position = {position[0] + size[0], position[1] + size[1]},
+      .tex_coords = {tex_data[2], tex_data[3]},
+      .color = {color[0], color[1], color[2], color[3]},
+  };
+
+  // bottom left
+  *dynlist_append(batch_list) = (batch_vertex_t){
+      .position = {position[0], position[1] + size[1]},
+      .tex_coords = {tex_data[0], tex_data[3]},
+      .color = {color[0], color[1], color[2], color[3]},
+  };
+}
+
+void render_end(u32 batch_texture_id) {
+  render_batch(batch_list, dynlist_size(batch_list), batch_texture_id);
+  glfwSwapBuffers(state.window);
+}
 
 void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_default);
@@ -106,8 +174,8 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(line), line); // update the data
   glDrawArrays(GL_LINES, 0, 2);                            // draw from the vbo
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind vbo
   glBindVertexArray(0);             // unbind vao
+  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind vbo
 }
 
 void render_aabb(f32* aabb, vec4 color) {
@@ -115,6 +183,37 @@ void render_aabb(f32* aabb, vec4 color) {
   vec2_scale(size, &aabb[2], 2); // scale the halfsize by 2
   render_quad_lines(&aabb[0], size, color);
 }
+
+static void calculate_sprite_tex_coords(vec4 result, f32 row, f32 column,
+                                        f32 texture_width, f32 texture_height,
+                                        f32 cell_width, f32 cell_height) {
+  f32 w = 1.0f / (texture_width / cell_width);
+  f32 h = 1.0f / (texture_height / cell_height);
+  f32 x = column * w;
+  // flip the row so that 0,0 index in the texture coordinates is the top left
+  f32 y = ((texture_height / cell_height - 1) - row) * h;
+  result[0] = x;
+  result[1] = y;
+  result[2] = x + w;
+  result[3] = y + h;
+}
+
+void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
+                               f32 column, vec2 position, vec2 size) {
+  vec4 tex_coords;
+  calculate_sprite_tex_coords(tex_coords, row, column, sprite_sheet->width,
+                              sprite_sheet->height, sprite_sheet->cell_width,
+                              sprite_sheet->cell_height);
+  if (size == NULL) {
+    size = (vec2){sprite_sheet->cell_width, sprite_sheet->cell_height};
+  }
+  vec2 bottom_left =
+      (vec2){position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
+  append_quad(bottom_left, size, tex_coords, WHITE);
+}
+
+f32 render_get_scale(void) { return render_scale; }
+fv2 render_get_render_size(void) { return (fv2){render_width, render_height}; }
 
 // for testing triangles
 void render_test_setup(u32* out_shader, u32* out_vao, f32 scale) {
