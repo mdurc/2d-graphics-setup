@@ -187,14 +187,21 @@ void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
   glGenVertexArrays(1, vao);
   glBindVertexArray(*vao);
 
+  // each element is an index for the ebo buffer
+  // in one quad: 4 required vertices (corners of the quad), 6 required
+  // element/indices (3 for both triangles).
+  // since each quad will always have 6 indices, we can simply fill in the index
+  // array for the ebo with the desired offsets, which are the vertex offsets.
   u32 indices[MAX_BATCH_ELEMENTS];
   for (u32 i = 0, offset = 0; i < MAX_BATCH_ELEMENTS; i += 6, offset += 4) {
-    indices[i + 0] = offset + 0;
-    indices[i + 1] = offset + 1;
-    indices[i + 2] = offset + 2;
-    indices[i + 3] = offset + 2;
-    indices[i + 4] = offset + 3;
-    indices[i + 5] = offset + 0;
+    // triangle one
+    indices[i + 0] = offset + 0; // top left
+    indices[i + 1] = offset + 1; // top right
+    indices[i + 2] = offset + 2; // bottom right
+    // triangle two
+    indices[i + 3] = offset + 2; // bottom right
+    indices[i + 4] = offset + 3; // bottom left
+    indices[i + 5] = offset + 0; // top left
   }
 
   glGenBuffers(1, vbo);
@@ -204,7 +211,7 @@ void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
   // vbo data is NULL, as we will be updating the contents at each frame,
   // thus we want touse GL_DYNAMIC_DRAW, just like with the line segments
 
-  // [x, y], [u, v], [r, g, b, a], [texture_slot]
+  // [x, y], [u, v], [r, g, b, a]
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
                         (void*)offsetof(batch_vertex_t, position));

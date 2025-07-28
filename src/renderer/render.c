@@ -64,6 +64,7 @@ static void render_batch(batch_vertex_t* vertices, size_t num_vertices,
   glUseProgram(shader_batch);
   glBindVertexArray(vao_batch);
   // the amount of quads we are drawing is count / 4, with six indices per quad
+  // so we draw all of the required indices that were set up in the batch init
   glDrawElements(GL_TRIANGLES, (num_vertices >> 2) * 6, GL_UNSIGNED_INT, NULL);
 }
 
