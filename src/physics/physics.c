@@ -18,10 +18,13 @@ void physics_init(void) {
   tick_rate = 1.0f / iterations;
 }
 void physics_destroy(void) { dynlist_destroy(phys_state.body_list); }
+void physics_body_destroy(size_t id) {
+  physics_body_get(id)->is_active = false;
+}
 
-static void update_sweep_result(hit_t* result, size_t other_id, aabb_t a,
-                                aabb_t b, vec2 velocity, u8 a_collision_mask,
-                                u8 b_collision_layer) {
+static void update_sweep_result(hit_t* result, aabb_t a, aabb_t b,
+                                size_t other_id, vec2 velocity,
+                                u8 a_collision_mask, u8 b_collision_layer) {
   if ((a_collision_mask & b_collision_layer) == 0) {
     return;
   }
@@ -50,8 +53,8 @@ static hit_t sweep_static_bodies(body_t* body, vec2 velocity) {
   hit_t result = {.time = 0xBBBB};
 
   for (u32 i = 0; i < dynlist_size(phys_state.static_body_list); ++i) {
-    static_body_t* static_body = &phys_state.static_body_list[i];
-    update_sweep_result(&result, i, body->aabb, static_body->aabb, velocity,
+    static_body_t* static_body = physics_static_body_get(i);
+    update_sweep_result(&result, body->aabb, static_body->aabb, i, velocity,
                         body->collision_mask, static_body->collision_layer);
   }
 
@@ -62,11 +65,11 @@ static hit_t sweep_bodies(body_t* body, vec2 velocity) {
   hit_t result = {.time = 0xBBBB};
 
   for (u32 i = 0; i < dynlist_size(phys_state.body_list); ++i) {
-    body_t* other = &phys_state.body_list[i];
+    body_t* other = physics_body_get(i);
     if (body == other) {
       continue;
     }
-    update_sweep_result(&result, i, body->aabb, other->aabb, velocity,
+    update_sweep_result(&result, body->aabb, other->aabb, i, velocity,
                         body->collision_mask, other->collision_layer);
   }
 
@@ -74,47 +77,64 @@ static hit_t sweep_bodies(body_t* body, vec2 velocity) {
 }
 
 static void sweep_response(body_t* body, vec2 velocity) {
-  hit_t hit = sweep_static_bodies(body, velocity);
-  hit_t hit_moving = sweep_bodies(body, velocity);
+  hit_t hit_static_body = sweep_static_bodies(body, velocity);
+  hit_t hit_body = sweep_bodies(body, velocity);
 
-  if (hit_moving.is_hit) {
+  if (hit_body.is_hit) {
     if (body->on_hit != NULL) {
-      body->on_hit(body, physics_body_get(hit_moving.other_id), hit_moving);
+      body->on_hit(body, physics_body_get(hit_body.other_id), hit_body);
     }
   }
 
-  if (hit.is_hit) {
-    body->aabb.position[0] = hit.position[0];
-    body->aabb.position[1] = hit.position[1];
+  if (hit_static_body.is_hit) {
+    // static bodies will be repelling the regular bodies premptively
+    if (!body->is_kinematic) {
+      // normal (non-kinematic) collision resolution
+      body->aabb.position[0] = hit_static_body.position[0];
+      body->aabb.position[1] = hit_static_body.position[1];
 
-    if (hit.normal[0] != 0.0f) {
-      body->aabb.position[1] += velocity[1];
-      body->velocity[0] = 0;
-    } else if (hit.normal[1] != 0.0f) {
-      body->aabb.position[0] += velocity[0];
-      body->velocity[1] = 0;
+      if (hit_static_body.normal[0] != 0.0f) {
+        body->aabb.position[1] += velocity[1];
+        body->velocity[0] = 0;
+      }
+      if (hit_static_body.normal[1] != 0.0f) {
+        body->aabb.position[0] += velocity[0];
+        body->velocity[1] = 0;
+      }
+    } else {
+      // move the kinematic body forward no matter what
+      vec2_add(body->aabb.position, body->aabb.position, velocity);
     }
 
+    // kinematic and normal bodies should both still report static collision
     if (body->on_hit_static != NULL) {
-      body->on_hit_static(body, physics_static_body_get(hit_moving.other_id),
-                          hit);
+      body->on_hit_static(body,
+                          physics_static_body_get(hit_static_body.other_id),
+                          hit_static_body);
     }
   } else {
+    // continue to move the body in its direction
     vec2_add(body->aabb.position, body->aabb.position, velocity);
   }
 }
 
 static void stationary_response(body_t* body) {
+  if (body->is_kinematic) {
+    // kinematic bodies shouldn't be repelled when overlapping a static body
+    return;
+  }
   dynlist_each(phys_state.static_body_list, static_body) {
-    aabb_t aabb =
-        physics_aabb_minkowski_difference(static_body->aabb, body->aabb);
-    vec2 min, max;
-    physics_aabb_min_max(min, max, aabb);
-
-    if (min[0] <= 0 && max[0] >= 0 && min[1] <= 0 && max[1] >= 0) {
+    if ((body->collision_mask & static_body->collision_layer) == 0) {
+      continue;
+    }
+    // the static bodies should repel any overlapping bodies
+    if (physics_aabb_intersect_aabb(static_body->aabb, body->aabb)) {
       vec2 penetration_vector;
-      physics_aabb_penetration_vector(penetration_vector, aabb);
+      aabb_t diff =
+          physics_aabb_minkowski_difference(static_body->aabb, body->aabb);
+      physics_aabb_penetration_vector(penetration_vector, diff);
 
+      // move the position by the penetration_vector
       vec2_add(body->aabb.position, body->aabb.position, penetration_vector);
     }
   }
@@ -122,13 +142,19 @@ static void stationary_response(body_t* body) {
 
 void physics_update(void) {
   dynlist_each(phys_state.body_list, body) {
-    body->velocity[1] += phys_state.gravity;
-    if (phys_state.terminal_velocity > body->velocity[1]) {
-      body->velocity[1] = phys_state.terminal_velocity;
+    if (!body->is_active) {
+      continue;
     }
 
-    body->velocity[0] += body->acceleration[0];
-    body->velocity[1] += body->acceleration[1];
+    // kinematic bodies will be "static" bodies, thus do not follow gravity, but
+    // they will also not repel bodies, which static bodies do.
+    if (!body->is_kinematic) {
+      body->velocity[0] += body->acceleration[0];
+      body->velocity[1] += body->acceleration[1] + phys_state.gravity;
+      if (phys_state.terminal_velocity > body->velocity[1]) {
+        body->velocity[1] = phys_state.terminal_velocity;
+      }
+    }
 
     // we are only doing narrow phase sweep, not a broad phase sweep, which may
     // be necessary for more performance
@@ -158,20 +184,40 @@ void physics_clamp_body(body_t* body) {
 
 size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
                            u8 collision_layer, u8 collision_mask,
-                           on_hit_func on_hit,
+                           bool is_kinematic, on_hit_func on_hit,
                            on_hit_static_func on_hit_static) {
-  *dynlist_append(phys_state.body_list) = (body_t){
-      .aabb = {.position = {position[0], position[1]},
-               .half_size = {size[0] * 0.5f, size[1] * 0.5f}},
+  size_t list_size = dynlist_size(phys_state.body_list);
+  size_t id = list_size;
+  for (size_t i = 0; i < list_size; ++i) {
+    body_t* body = physics_body_get(i);
+    if (!body->is_active) {
+      id = i;
+      break;
+    }
+  }
+
+  if (id == list_size) {
+    *dynlist_append(phys_state.body_list) = (body_t){0};
+  }
+
+  body_t* body = physics_body_get(id);
+
+  *body = (body_t){
+      .aabb =
+          {
+              .position = {position[0], position[1]},
+              .half_size = {size[0] * 0.5f, size[1] * 0.5f},
+          },
       .velocity = {velocity[0], velocity[1]},
-      .acceleration = {0, 0},
       .collision_layer = collision_layer,
       .collision_mask = collision_mask,
       .on_hit = on_hit,
       .on_hit_static = on_hit_static,
+      .is_kinematic = is_kinematic,
+      .is_active = true,
   };
 
-  return dynlist_size(phys_state.body_list) - 1;
+  return id;
 }
 
 body_t* physics_body_get(size_t idx) {

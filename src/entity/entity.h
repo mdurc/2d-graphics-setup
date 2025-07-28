@@ -13,7 +13,8 @@ typedef struct entity {
 
 void entity_init(void);
 size_t entity_create(vec2 position, vec2 size, vec2 velocity,
-                     u8 collision_layer, u8 collision_mask, on_hit_func on_hit,
+                     u8 collision_layer, u8 collision_mask, bool is_kinematic,
+                     size_t animation_id, on_hit_func on_hit,
                      on_hit_static_func on_hit_static);
 entity_t* entity_get(size_t id);
 size_t entity_count(void);
