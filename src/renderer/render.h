@@ -27,7 +27,8 @@ void render_quad_lines(vec2 pos, vec2 size, vec4 color);
 void render_line_segment(vec2 start, vec2 end, vec4 color);
 void render_aabb(f32* aabb, vec4 color);
 void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
-                               f32 column, vec2 position, vec2 size);
+                               f32 column, vec2 position, vec2 size,
+                               bool is_flipped);
 
 f32 render_get_scale(void);
 fv2 render_get_render_size(void);

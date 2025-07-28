@@ -1,0 +1,41 @@
+#pragma once
+
+#include "../c-lib/types.h"
+#include "../renderer/render.h"
+
+#define MAX_FRAMES 16
+
+typedef struct {
+  f32 duration;
+  u8 row, column;
+} animation_frame_t;
+
+typedef struct {
+  sprite_sheet_t* sprite_sheet;
+  animation_frame_t frames[MAX_FRAMES];
+  u8 frame_count;
+} animation_definition_t;
+
+typedef struct {
+  size_t animation_definition_id;
+  f32 current_frame_time;
+  u8 current_frame_index;
+  bool does_loop;
+  bool is_active;
+  bool is_flipped;
+} animation_t;
+
+void animation_init(void);
+
+// instance approach so that each animation can have different frame timing/sync
+size_t animation_definition_create(sprite_sheet_t* sprite_sheet, f32 duration,
+                                   u8 row, u8* columns, u8 frame_count);
+animation_definition_t* animation_definition_get(size_t id);
+
+size_t animation_create(size_t animation_definition_id, bool does_loop);
+animation_t* animation_get(size_t id);
+void animation_destroy(size_t id);
+
+void animation_update(f32 delta_time);
+void animation_render(animation_t* animation, vec2 position, vec4 color,
+                      u32 texture_slots[8]);

@@ -200,11 +200,19 @@ static void calculate_sprite_tex_coords(vec4 result, f32 row, f32 column,
 }
 
 void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
-                               f32 column, vec2 position, vec2 size) {
+                               f32 column, vec2 position, vec2 size,
+                               bool is_flipped) {
   vec4 tex_coords;
   calculate_sprite_tex_coords(tex_coords, row, column, sprite_sheet->width,
                               sprite_sheet->height, sprite_sheet->cell_width,
                               sprite_sheet->cell_height);
+  if (is_flipped) {
+    // flip the x-axis
+    f32 tmp = tex_coords[0];
+    tex_coords[0] = tex_coords[2];
+    tex_coords[2] = tmp;
+  }
+
   if (size == NULL) {
     size = (vec2){sprite_sheet->cell_width, sprite_sheet->cell_height};
   }

@@ -1,3 +1,4 @@
+#include "animation/animation.h"
 #include "c-lib/dynlist.h"
 #include "c-lib/math.h"
 #include "c-lib/time.h"
@@ -39,11 +40,11 @@ static void input_handle(body_t* body_player) {
 
   f32 velx = 0, vely = body_player->velocity[1];
   if (state.input.right > 0) {
-    velx += 1000 / scale;
+    velx += 500 / scale;
   }
 
   if (state.input.left > 0) {
-    velx -= 1000 / scale;
+    velx -= 500 / scale;
   }
 
   if (state.input.up > 0 && player_is_grounded) {
@@ -84,6 +85,7 @@ int main(void) {
   render_init(1280, 720, scale);
   physics_init();
   entity_init();
+  animation_init();
   state_init();
 
   u32 shader_temp, vao_one, vao_two;
@@ -133,12 +135,26 @@ int main(void) {
   sprite_sheet_t bg_sheet;
   render_init_sprite_sheet(&bg_sheet, "./res/bg.png", 8, 8);
 
+  size_t player_def_still_id =
+      animation_definition_create(&bg_sheet, 0.2f, 0, (u8[]){0}, 1);
+  size_t player_def_walk_id =
+      animation_definition_create(&bg_sheet, 0.2f, 0, (u8[]){1, 2, 3, 4}, 4);
+  size_t player_anim_still_id = animation_create(player_def_still_id, false);
+  size_t player_anim_walk_id = animation_create(player_def_walk_id, true);
+
   while (!glfwWindowShouldClose(state.window)) {
     time_update();
 
     // storing the body_id because the pointers could be invalidated by dynlist
     entity_t* player = entity_get(player_id);
     body_t* body_player = physics_body_get(player->body_id);
+
+    if (body_player->velocity[0] != 0.0f) {
+      player->animation_id = player_anim_walk_id;
+    } else {
+      player->animation_id = player_anim_still_id;
+    }
+
     static_body_t* static_body_a = physics_static_body_get(static_body_a_id);
     static_body_t* static_body_b = physics_static_body_get(static_body_b_id);
     static_body_t* static_body_c = physics_static_body_get(static_body_c_id);
@@ -148,6 +164,7 @@ int main(void) {
     input_update();
     input_handle(body_player);
     physics_update();
+    animation_update(state.time.delta);
 
     render_begin();
 
@@ -172,8 +189,26 @@ int main(void) {
     render_aabb((f32*)physics_body_get(entity_get(entity_b_id)->body_id),
                 WHITE);
 
-    render_sprite_sheet_frame(&bg_sheet, 0, 1, body_player->aabb.position,
-                              (vec2){player_size, player_size});
+    for (size_t i = 0; i < entity_count(); ++i) {
+      entity_t* entity = entity_get(i);
+      if (entity->animation_id == (size_t)-1) {
+        continue;
+      }
+      body_t* body = physics_body_get(entity->body_id);
+      animation_t* anim = animation_get(entity->animation_id);
+      animation_definition_t* adef =
+          animation_definition_get(anim->animation_definition_id);
+      animation_frame_t* aframe = &adef->frames[anim->current_frame_index];
+
+      if (body->velocity[0] < 0) {
+        anim->is_flipped = true;
+      } else if (body->velocity[0] > 0) {
+        anim->is_flipped = false;
+      }
+      render_sprite_sheet_frame(
+          adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position,
+          (vec2){player_size, player_size}, anim->is_flipped);
+    }
 
     render_end(bg_sheet.texture_id);
 
