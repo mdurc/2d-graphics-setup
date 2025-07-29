@@ -71,6 +71,7 @@ static int config_load(void) {
 
 void config_init(void) {
   if (config_load() == 0) {
+    LOG("Configuration system initialized and loaded");
     return;
   }
   // otherwise write the default config to disk

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "c-lib/types.h"
+#include "../c-lib/types.h"
 
 typedef struct {
   f32 delta, now, last;

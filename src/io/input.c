@@ -22,7 +22,7 @@ void input_update(void) {
   glfwPollEvents();
 
   memcpy(key_previous, key_current, sizeof(key_current));
-  for (int key = 0; key < MAX_KEYS; ++key) {
+  for (u32 key = 0; key < MAX_KEYS; ++key) {
     key_current[key] = glfwGetKey(state.window, key) == GLFW_PRESS;
   }
 

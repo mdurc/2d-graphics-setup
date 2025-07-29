@@ -1,10 +1,25 @@
 #include "entity.h"
 
 #include "../c-lib/dynlist.h"
+#include "../c-lib/log.h"
 
 static DYNLIST(entity_t) entity_list;
 
-void entity_init(void) { entity_list = dynlist_create(entity_t); }
+void entity_init(void) {
+  entity_list = dynlist_create(entity_t);
+  LOG("Entity system initialized");
+}
+void entity_destroy(void) {
+  dynlist_destroy(entity_list);
+  LOG("Entity system deinitialized");
+}
+
+size_t entity_count(void) { return dynlist_size(entity_list); }
+
+entity_t* entity_get(size_t idx) {
+  ASSERT(idx < dynlist_size(entity_list));
+  return &entity_list[idx];
+}
 
 size_t entity_create(vec2 position, vec2 size, vec2 velocity,
                      u8 collision_layer, u8 collision_mask, bool is_kinematic,
@@ -32,15 +47,7 @@ size_t entity_create(vec2 position, vec2 size, vec2 velocity,
                                      on_hit_static),
       .animation_id = animation_id,
       .is_active = true,
-      .health = 20,
   };
 
   return id;
 }
-
-entity_t* entity_get(size_t id) {
-  ASSERT(id < dynlist_size(entity_list));
-  return &entity_list[id];
-}
-
-size_t entity_count(void) { return dynlist_size(entity_list); }

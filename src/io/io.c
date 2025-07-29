@@ -63,6 +63,10 @@ file_t io_file_read(const char* path) {
   file.len = used;
   file.is_valid = true;
 
+  fclose(fp);
+
+  LOG("Successfully read from file %s", path);
+
   return file;
 }
 
@@ -79,6 +83,8 @@ int io_file_write(void* buf, size_t size, const char* path) {
   if (chunks_written != 1) {
     ERROR_RETURN(1, "Write error: %zu chunks\n", chunks_written);
   }
+
+  LOG("Successfully wrote from file %s", path);
 
   return 0;
 }

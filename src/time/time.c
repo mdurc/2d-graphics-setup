@@ -1,16 +1,18 @@
-#include "time.h"
-
 #include <math.h>
 #include <time.h>
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include "state.h"
+#include "../c-lib/log.h"
+#include "../state.h"
+#include "time.h"
 
 void time_init(f32 frame_rate) {
   state.time.frame_rate = frame_rate;
   state.time.frame_delay = 1000.f / frame_rate;    // ms per frame
   state.time.last = (f32)(glfwGetTime() * 1000.0); // convert to ms
+  LOG("Time system initialized");
 }
 
 void time_update(void) {

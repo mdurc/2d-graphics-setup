@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../c-lib/dynlist.h"
+#include "../c-lib/types.h"
 #include "linmath.h"
 
 typedef struct body body_t;
@@ -41,27 +41,23 @@ struct hit {
   bool is_hit;
 };
 
-typedef struct {
-  f32 gravity, terminal_velocity;
-
-  DYNLIST(body_t) body_list;
-  DYNLIST(static_body_t) static_body_list;
-} physics_state_internal_t;
-
 void physics_init(void);
 void physics_destroy(void);
-void physics_body_destroy(size_t id);
+void physics_deactivate(size_t idx);
 
 void physics_update(void);
 void physics_clamp_body(body_t* body);
 
+size_t physics_body_count(void);
+body_t* physics_body_get(size_t idx);
 size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
                            u8 collision_layer, u8 collision_mask,
                            bool is_kinematic, on_hit_func on_hit,
                            on_hit_static_func on_hit_static);
-body_t* physics_body_get(size_t idx);
-size_t physics_static_body_create(vec2 position, vec2 size, u8 collision_layer);
+
+size_t physics_static_body_count(void);
 static_body_t* physics_static_body_get(size_t idx);
+size_t physics_static_body_create(vec2 position, vec2 size, u8 collision_layer);
 
 bool physics_point_intersect_aabb(vec2 point, aabb_t aabb);
 bool physics_aabb_intersect_aabb(aabb_t a, aabb_t b);
