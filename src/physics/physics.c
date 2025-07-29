@@ -97,23 +97,18 @@ static void sweep_response(body_t* body, vec2 velocity) {
   }
 
   if (hit_static_body.is_hit) {
-    // static bodies will be repelling the regular bodies premptively
-    if (!body->is_kinematic) {
-      // normal (non-kinematic) collision resolution
-      body->aabb.position[0] = hit_static_body.position[0];
-      body->aabb.position[1] = hit_static_body.position[1];
+    // static bodies will be repelling the non-static bodies
+    body->aabb.position[0] = hit_static_body.position[0];
+    body->aabb.position[1] = hit_static_body.position[1];
 
-      if (hit_static_body.normal[0] != 0.0f) {
-        body->aabb.position[1] += velocity[1];
-        body->velocity[0] = 0;
-      }
-      if (hit_static_body.normal[1] != 0.0f) {
-        body->aabb.position[0] += velocity[0];
-        body->velocity[1] = 0;
-      }
-    } else {
-      // move the kinematic body forward no matter what
-      vec2_add(body->aabb.position, body->aabb.position, velocity);
+    // determine what direction the hit is, and stop that movement
+    if (hit_static_body.normal[0] != 0.0f) {
+      body->aabb.position[1] += velocity[1];
+      body->velocity[0] = 0.0f;
+    }
+    if (hit_static_body.normal[1] != 0.0f) {
+      body->aabb.position[0] += velocity[0];
+      body->velocity[1] = 0.0f;
     }
 
     // kinematic and normal bodies should both still report static collision
@@ -129,10 +124,6 @@ static void sweep_response(body_t* body, vec2 velocity) {
 }
 
 static void stationary_response(body_t* body) {
-  if (body->is_kinematic) {
-    // kinematic bodies shouldn't be repelled when overlapping a static body
-    return;
-  }
   dynlist_each(static_body_list, static_body) {
     if ((body->collision_mask & static_body->collision_layer) == 0) {
       continue;
@@ -155,8 +146,7 @@ void physics_update(void) {
       continue;
     }
 
-    // kinematic bodies will be "static" bodies, thus do not follow gravity, but
-    // they will also not repel bodies, which static bodies do.
+    // kinematic bodies are normal bodies but do not follow gravity
     if (!body->is_kinematic) {
       body->velocity[0] += body->acceleration[0];
       body->velocity[1] += body->acceleration[1] + gravity;
