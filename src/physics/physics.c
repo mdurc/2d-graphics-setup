@@ -4,7 +4,6 @@
 #include "../c-lib/log.h"
 #include "../c-lib/math.h"
 #include "../renderer/render.h"
-#include "../state.h"
 
 static f32 gravity;
 static f32 terminal_velocity;
@@ -25,6 +24,7 @@ void physics_init(void) {
 
 void physics_destroy(void) {
   dynlist_destroy(body_list);
+  dynlist_destroy(static_body_list);
   LOG("Physics system deinitialized");
 }
 
@@ -97,11 +97,12 @@ static void sweep_response(body_t* body, vec2 velocity) {
   }
 
   if (hit_static_body.is_hit) {
-    // static bodies will be repelling the non-static bodies
+    // move the body to the point of collision based on the hit time.
     body->aabb.position[0] = hit_static_body.position[0];
     body->aabb.position[1] = hit_static_body.position[1];
 
-    // determine what direction the hit is, and stop that movement
+    // after moving, stop the body's velocity in the direction of the collision.
+    // this prevents it from trying to move further into the wall.
     if (hit_static_body.normal[0] != 0.0f) {
       body->aabb.position[1] += velocity[1];
       body->velocity[0] = 0.0f;
@@ -118,7 +119,7 @@ static void sweep_response(body_t* body, vec2 velocity) {
                           hit_static_body);
     }
   } else {
-    // continue to move the body in its direction
+    // no collision was found, continue to move the body in its direction
     vec2_add(body->aabb.position, body->aabb.position, velocity);
   }
 }
@@ -140,7 +141,7 @@ static void stationary_response(body_t* body) {
   }
 }
 
-void physics_update(void) {
+void physics_update(f32 delta_time) {
   dynlist_each(body_list, body) {
     if (!body->is_active) {
       continue;
@@ -157,9 +158,10 @@ void physics_update(void) {
 
     // we are only doing narrow phase sweep, not a broad phase sweep, which may
     // be necessary for more performance
-    vec2 scaled_velocity;
-    vec2_scale(scaled_velocity, body->velocity, state.time.delta * tick_rate);
-    for (u32 j = 0; j < iterations; ++j) {
+    for (u32 i = 0; i < iterations; ++i) {
+      vec2 scaled_velocity;
+      vec2_scale(scaled_velocity, body->velocity, delta_time * tick_rate);
+
       sweep_response(body, scaled_velocity);
       stationary_response(body);
       physics_clamp_body(body);

@@ -45,7 +45,7 @@ void physics_init(void);
 void physics_destroy(void);
 void physics_deactivate(size_t idx);
 
-void physics_update(void);
+void physics_update(f32 delta_time);
 void physics_clamp_body(body_t* body);
 
 size_t physics_body_count(void);

@@ -11,7 +11,7 @@
 #define length(v) ({ const fv2 _v = (v); sqrtf(dot(_v, _v)); })
 #define normalize(u) ({ const fv2 _u = (u); const f32 _l = length(_u); (fv2) { _u.x / _l, _u.y / _l }; })
 
-#define _FLOAT_EPSILON 1e-6f
-#define float_eq(a, b) (fabsf((a) - (b)) < _FLOAT_EPSILON)
+#define FLOAT_EPSILON 1e-6f
+#define float_eq(a, b) (fabsf((a) - (b)) < FLOAT_EPSILON)
 
 #endif

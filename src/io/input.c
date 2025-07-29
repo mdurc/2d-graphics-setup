@@ -36,4 +36,6 @@ void input_update(void) {
                    &state.input.down);
   update_key_state(key_current[state.config.keybinds[INPUT_KEY_ESCAPE]],
                    &state.input.escape);
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_DEBUG]],
+                   &state.input.debug);
 }

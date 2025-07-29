@@ -53,30 +53,49 @@ void run_game_loop(void) {
 
   f32 height = render_get_render_size().y;
 
+  bool is_paused = false;
+  bool advance_frame = false;
+
   while (!glfwWindowShouldClose(state.window)) {
     entity_t* player = entity_get(e_player_id);
-    //entity_t* enemy_one = entity_get(e_a_id);
-    //entity_t* enemy_two = entity_get(e_b_id);
+    // entity_t* enemy_one = entity_get(e_a_id);
+    // entity_t* enemy_two = entity_get(e_b_id);
     body_t* body_player = physics_body_get(player->body_id);
-    //body_t* body_enemy_one = physics_body_get(enemy_one->body_id);
-    //body_t* body_enemy_two = physics_body_get(enemy_two->body_id);
+    // body_t* body_enemy_one = physics_body_get(enemy_one->body_id);
+    // body_t* body_enemy_two = physics_body_get(enemy_two->body_id);
 
+    // always update the time and input handler
     time_update();
     input_update();
-    input_handle(body_player);
-    physics_update();
-    animation_update(state.time.delta);
 
-    player->animation_id = body_player->velocity[0] != 0.0f
-                               ? anim_player_walk_id
-                               : anim_player_idle_id;
+    key_state_t debug = state.input.debug;
+    is_paused = (debug == KS_HELD || debug == KS_PRESSED);
+
+    advance_frame = false;
+    if (is_paused) {
+      // if paused and a movement key is pressed, advance one frame
+      if (state.input.left == KS_PRESSED || state.input.right == KS_PRESSED ||
+          state.input.up == KS_PRESSED) {
+        advance_frame = true;
+      }
+    }
+
+    if (!is_paused || advance_frame) {
+      input_handle(body_player);
+      physics_update(state.time.delta);
+      animation_update(state.time.delta);
+
+      player->animation_id = body_player->velocity[0] != 0.0f
+                                 ? anim_player_walk_id
+                                 : anim_player_idle_id;
+    }
 
     static_body_t* sb_a = physics_static_body_get(sb_a_id);
     static_body_t* sb_b = physics_static_body_get(sb_b_id);
     static_body_t* sb_c = physics_static_body_get(sb_c_id);
     static_body_t* sb_d = physics_static_body_get(sb_d_id);
     static_body_t* sb_e = physics_static_body_get(sb_e_id);
-    //body_t* kin = physics_body_get(kin_id);
+    // body_t* kin = physics_body_get(kin_id);
 
     render_begin();
 
@@ -85,15 +104,17 @@ void run_game_loop(void) {
     render_test_triangle(shader_temp, vao_two);
 
     // Render all of the aabbs
-    render_aabb((f32*)&sb_a->aabb, WHITE);                    // Boundary A
-    render_aabb((f32*)&sb_b->aabb, WHITE);                    // Boundary B
-    render_aabb((f32*)&sb_c->aabb, WHITE);                    // Boundary C
-    render_aabb((f32*)&sb_d->aabb, WHITE);                    // Boundary D
-    render_aabb((f32*)&sb_e->aabb, WHITE);                    // Boundary E
-    //render_aabb((f32*)&kin->aabb, WHITE);                     // Kinematic Block
+    render_aabb((f32*)&sb_a->aabb, WHITE); // Boundary A
+    render_aabb((f32*)&sb_b->aabb, WHITE); // Boundary B
+    render_aabb((f32*)&sb_c->aabb, WHITE); // Boundary C
+    render_aabb((f32*)&sb_d->aabb, WHITE); // Boundary D
+    render_aabb((f32*)&sb_e->aabb, WHITE); // Boundary E
+    // render_aabb((f32*)&kin->aabb, WHITE);                     // Kinematic
+    // Block
     render_aabb((f32*)&body_player->aabb, player_aabb_color); // Player body
-    //render_aabb((f32*)&body_enemy_one->aabb, WHITE);          // enemy one body
-    //render_aabb((f32*)&body_enemy_two->aabb, WHITE);          // enemy two body
+    // render_aabb((f32*)&body_enemy_one->aabb, WHITE);          // enemy one
+    // body render_aabb((f32*)&body_enemy_two->aabb, WHITE);          // enemy
+    // two body
 
     // Render the currently active entity animations from sprite sheet
     for (size_t i = 0; i < entity_count(); ++i) {
