@@ -125,8 +125,8 @@ void animation_update(f32 delta_time) {
   }
 }
 
-void animation_render(animation_t* animation, vec2 position, vec2 size,
-                      vec4 color) {
+void animation_render_current_frame(animation_t* animation, vec2 position,
+                                    vec2 size, vec4 color) {
   animation_definition_t* adef =
       animation_definition_get(animation->animation_definition_id);
   animation_frame_t* aframe = &adef->frames[animation->current_frame_index];

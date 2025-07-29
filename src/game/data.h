@@ -10,16 +10,17 @@ typedef enum {
   COLLISION_LAYER_KINEMATIC = 1 << 3,
 } collision_layer_t;
 
+// Physics Collision Callbacks
 void player_on_hit(body_t* self, body_t* other, hit_t hit);
 void player_on_hit_static(body_t* self, static_body_t* other, hit_t hit);
 void enemy_on_hit_static(body_t* self, static_body_t* other, hit_t hit);
 void kinematic_on_hit_static(body_t* self, static_body_t* other, hit_t hit);
 void kinematic_on_hit(body_t* self, body_t* other, hit_t hit);
 
-void setup(sprite_sheet_t* bg_sheet);
+void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet);
 
 extern f32 player_size;
-extern vec4 player_color;
+extern vec4 player_aabb_color;
 extern bool player_is_grounded;
 
 extern u8 enemy_mask;
@@ -27,18 +28,22 @@ extern u8 player_mask;
 extern u8 kinematic_mask;
 
 // storing the id's because the pointers could be invalidated by dynlist
-extern size_t static_body_a_id;
-extern size_t static_body_b_id;
-extern size_t static_body_c_id;
-extern size_t static_body_d_id;
-extern size_t static_body_e_id;
 
-extern size_t entity_player_id;
-extern size_t entity_a_id;
-extern size_t entity_b_id;
-extern size_t kinematic_body_id;
+// Static Body Ids
+extern size_t sb_a_id;
+extern size_t sb_b_id;
+extern size_t sb_c_id;
+extern size_t sb_d_id;
+extern size_t sb_e_id;
 
-extern size_t player_def_idle_id;
-extern size_t player_def_walk_id;
-extern size_t player_anim_idle_id;
-extern size_t player_anim_walk_id;
+// Kinematic Body Ids
+extern size_t kin_id;
+
+// Entity Ids
+extern size_t e_player_id;
+extern size_t e_a_id;
+extern size_t e_b_id;
+
+// Animation Ids
+extern size_t anim_player_idle_id;
+extern size_t anim_player_walk_id;

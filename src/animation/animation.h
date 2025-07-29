@@ -40,5 +40,5 @@ animation_t* animation_get(size_t idx);
 size_t animation_create(size_t animation_definition_id, bool does_loop);
 
 void animation_update(f32 delta_time);
-void animation_render(animation_t* animation, vec2 position, vec2 size,
-                      vec4 color);
+void animation_render_current_frame(animation_t* animation, vec2 position,
+                                    vec2 size, vec4 color);
