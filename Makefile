@@ -22,7 +22,6 @@ all: $(PROGRAM)
 
 $(PROGRAM): $(OBJ_FILES)
 	$(CC) $(OBJ_FILES) -o $(PROGRAM) $(LDFLAGS)
-	cp -R /Users/mdurcan/personal/git_projects/tools/my-libraries/c-lib src/
 
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
