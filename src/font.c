@@ -1,7 +1,8 @@
 #include "font.h"
 
-#include "c-lib/dynlist.h"
 #include "c-lib/misc.h"
+#include "linmath.h"
+#include "renderer/render.h"
 
 static iv2 find_char(char ch) {
   static const char* lines[] = {
@@ -22,30 +23,29 @@ static iv2 find_char(char ch) {
   return find_char('?');
 }
 
-// void push_font_ch(sprite_t** batch, sprite_sheet_t* font_sheet, char ch,
-//                   fv2 dst_px_pos) {
-//   *dynlist_append(*batch) = (sprite_t){.src_idx = find_char(ch),
-//                                        .dst_px = dst_px_pos,
-//                                        .rotation = 0,
-//                                        .src_sheet = font_sheet};
-// }
-//
-// void push_font_str(sprite_t** batch, sprite_sheet_t* font_sheet,
-//                    const char* str, fv2 dst_px_pos) {
-//   f32 starting_x = dst_px_pos.x;
-//   // f32 scale = font_sheet->scale;
-//   f32 scale = 10.0f;
-//
-//   const char* p = str;
-//   while (*p) {
-//     if (*p == '\n') {
-//       dst_px_pos.y += 8.0f * scale;
-//       dst_px_pos.x = starting_x;
-//     } else {
-//       push_font_ch(batch, font_sheet, *p, dst_px_pos);
-//       dst_px_pos.x += 9.0f * scale;
-//     }
-//
-//     ++p;
-//   }
-// }
+void font_render_char(sprite_sheet_t* font_sheet, char ch, vec2 position,
+                      vec2 size, vec4 color) {
+  iv2 tex_idx = find_char(ch);
+  render_sprite_sheet_frame(font_sheet, tex_idx.y, tex_idx.x, position, size,
+                            color, false);
+}
+
+void font_render_str(sprite_sheet_t* font_sheet, const char* str, vec2 position,
+                     vec2 size, vec4 color) {
+  if (size == NULL) {
+    size = (vec2){font_sheet->cell_width, font_sheet->cell_height};
+  }
+
+  f32 starting_x = position[0];
+  const char* p = str;
+  while (*p) {
+    if (*p == '\n') {
+      position[1] -= size[1];
+      position[0] = starting_x;
+    } else {
+      font_render_char(font_sheet, *p, position, size, color);
+      position[0] += size[0];
+    }
+    ++p;
+  }
+}

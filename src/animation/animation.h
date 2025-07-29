@@ -37,5 +37,5 @@ animation_t* animation_get(size_t id);
 void animation_destroy(size_t id);
 
 void animation_update(f32 delta_time);
-void animation_render(animation_t* animation, vec2 position, vec4 color,
-                      u32 texture_slots[8]);
+void animation_render(animation_t* animation, vec2 position, vec2 size,
+                      vec4 color);

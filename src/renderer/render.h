@@ -12,6 +12,7 @@ typedef struct {
   vec2 position;
   vec2 tex_coords;
   vec4 color;
+  u32 texture_slot_index;
 } batch_vertex_t;
 
 #define MAX_BATCH_QUADS 10000
@@ -20,14 +21,14 @@ typedef struct {
 
 void render_init(u32 width, u32 height, f32 scale);
 void render_begin(void);
-void render_end(u32 batch_texture_id);
+void render_end(void);
 
 void render_quad(vec2 pos, vec2 size, vec4 color);
 void render_quad_lines(vec2 pos, vec2 size, vec4 color);
 void render_line_segment(vec2 start, vec2 end, vec4 color);
 void render_aabb(f32* aabb, vec4 color);
 void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
-                               f32 column, vec2 position, vec2 size,
+                               f32 column, vec2 position, vec2 size, vec4 color,
                                bool is_flipped);
 
 f32 render_get_scale(void);

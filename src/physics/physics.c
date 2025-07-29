@@ -32,7 +32,7 @@ static void update_sweep_result(hit_t* result, aabb_t a, aabb_t b,
   aabb_t sum_aabb = b;
   vec2_add(sum_aabb.half_size, sum_aabb.half_size, a.half_size);
 
-  hit_t hit = physics_ray_intersect_aabb(a.position, velocity, sum_aabb);
+  hit_t hit = ray_intersect_aabb(a.position, velocity, sum_aabb);
   if (hit.is_hit) {
     if (hit.time < result->time) {
       *result = hit;
@@ -130,9 +130,8 @@ static void stationary_response(body_t* body) {
     // the static bodies should repel any overlapping bodies
     if (physics_aabb_intersect_aabb(static_body->aabb, body->aabb)) {
       vec2 penetration_vector;
-      aabb_t diff =
-          physics_aabb_minkowski_difference(static_body->aabb, body->aabb);
-      physics_aabb_penetration_vector(penetration_vector, diff);
+      aabb_t diff = aabb_minkowski_difference(static_body->aabb, body->aabb);
+      aabb_penetration_vector(penetration_vector, diff);
 
       // move the position by the penetration_vector
       vec2_add(body->aabb.position, body->aabb.position, penetration_vector);
@@ -241,27 +240,27 @@ static_body_t* physics_static_body_get(size_t idx) {
   return &phys_state.static_body_list[idx];
 }
 
-void physics_aabb_min_max(vec2 min, vec2 max, aabb_t aabb) {
+void aabb_min_max(vec2 min, vec2 max, aabb_t aabb) {
   vec2_sub(min, aabb.position, aabb.half_size);
   vec2_add(max, aabb.position, aabb.half_size);
 }
 
 bool physics_point_intersect_aabb(vec2 point, aabb_t aabb) {
   vec2 min, max;
-  physics_aabb_min_max(min, max, aabb);
+  aabb_min_max(min, max, aabb);
   return point[0] >= min[0] && point[0] <= max[0] && point[1] >= min[1] &&
          point[1] <= max[1];
 }
 
 bool physics_aabb_intersect_aabb(aabb_t a, aabb_t b) {
   vec2 min, max;
-  physics_aabb_min_max(min, max, physics_aabb_minkowski_difference(a, b));
+  aabb_min_max(min, max, aabb_minkowski_difference(a, b));
 
   // check if the origin is within this aabb range
   return (min[0] <= 0 && max[0] >= 0 && min[1] <= 0 && max[1] >= 0);
 }
 
-aabb_t physics_aabb_minkowski_difference(aabb_t a, aabb_t b) {
+aabb_t aabb_minkowski_difference(aabb_t a, aabb_t b) {
   aabb_t result;
   vec2_sub(result.position, a.position, b.position);
   vec2_add(result.half_size, a.half_size, b.half_size);
@@ -269,11 +268,11 @@ aabb_t physics_aabb_minkowski_difference(aabb_t a, aabb_t b) {
   return result;
 }
 
-void physics_aabb_penetration_vector(vec2 r, aabb_t mink_aabb) {
+void aabb_penetration_vector(vec2 r, aabb_t mink_aabb) {
   // the smallest vector that will separate the boxes
   // diagonals will never be the shortest, so we can check each side
   vec2 min, max;
-  physics_aabb_min_max(min, max, mink_aabb);
+  aabb_min_max(min, max, mink_aabb);
 
   f32 min_dist = fabsf(min[0]); // distance the left edge is to the origin
   r[0] = min[0]; // initially push rightward (positive x) that amt
@@ -299,10 +298,10 @@ void physics_aabb_penetration_vector(vec2 r, aabb_t mink_aabb) {
   }
 }
 
-hit_t physics_ray_intersect_aabb(vec2 pos, vec2 magnitude, aabb_t aabb) {
+hit_t ray_intersect_aabb(vec2 pos, vec2 magnitude, aabb_t aabb) {
   hit_t hit = {0};
   vec2 min, max;
-  physics_aabb_min_max(min, max, aabb);
+  aabb_min_max(min, max, aabb);
 
   f32 last_entry = -INFINITY;
   f32 first_exit = INFINITY;

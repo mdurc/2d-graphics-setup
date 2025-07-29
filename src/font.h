@@ -1,6 +1,8 @@
 #pragma once
 
-// void push_font_ch(sprite_t** batch, sprite_sheet_t* font_sheet, char ch,
-//                   fv2 dst_px_pos);
-// void push_font_str(sprite_t** batch, sprite_sheet_t* font_sheet,
-//                    const char* str, fv2 dst_px_pos);
+#include "renderer/render.h"
+
+void font_render_char(sprite_sheet_t* font_sheet, char ch, vec2 position,
+                      vec2 size, vec4 color);
+void font_render_str(sprite_sheet_t* font_sheet, const char* str, vec2 position,
+                     vec2 size, vec4 color);

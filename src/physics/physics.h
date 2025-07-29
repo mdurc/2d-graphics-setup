@@ -63,9 +63,10 @@ body_t* physics_body_get(size_t idx);
 size_t physics_static_body_create(vec2 position, vec2 size, u8 collision_layer);
 static_body_t* physics_static_body_get(size_t idx);
 
-void physics_aabb_min_max(vec2 min, vec2 max, aabb_t aabb);
 bool physics_point_intersect_aabb(vec2 point, aabb_t aabb);
 bool physics_aabb_intersect_aabb(aabb_t a, aabb_t b);
-aabb_t physics_aabb_minkowski_difference(aabb_t a, aabb_t b);
-void physics_aabb_penetration_vector(vec2 r, aabb_t aabb);
-hit_t physics_ray_intersect_aabb(vec2 pos, vec2 magnitude, aabb_t aabb);
+
+void aabb_min_max(vec2 min, vec2 max, aabb_t aabb);
+aabb_t aabb_minkowski_difference(aabb_t a, aabb_t b);
+void aabb_penetration_vector(vec2 r, aabb_t aabb);
+hit_t ray_intersect_aabb(vec2 pos, vec2 magnitude, aabb_t aabb);

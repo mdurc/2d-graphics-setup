@@ -119,6 +119,17 @@ void render_init_shaders(u32* shader_program, u32* shader_batch,
   glUseProgram(*shader_batch);
   glUniformMatrix4fv(glGetUniformLocation(*shader_batch, "projection"), 1,
                      GL_FALSE, &projection[0][0]);
+
+  // the texture slot represents what texture is used for the active texture
+  // (ie, GL_TEXTURE0, GL_TEXTURE1, etc).
+  int slots[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+  glUniform1iv(glGetUniformLocation(*shader_batch, "texture_slots"), 8, slots);
+  /*
+  Each batch vertex will have a texture slot index. The slot index maps to the
+  texture id in the engine. When we go to render the batch, we then link the
+  texture slot in the fragment shader (GL_TEXTURE0, GL_TEXTURE1) to the
+  corresponding texture ids that we have per slot in the engine.
+  */
 }
 
 void render_init_color_texture(u32* texture) {
@@ -211,7 +222,7 @@ void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
   // vbo data is NULL, as we will be updating the contents at each frame,
   // thus we want touse GL_DYNAMIC_DRAW, just like with the line segments
 
-  // [x, y], [u, v], [r, g, b, a]
+  // [x, y], [u, v], [r, g, b, a], [texture_slot]
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
                         (void*)offsetof(batch_vertex_t, position));
@@ -221,6 +232,11 @@ void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
                         (void*)offsetof(batch_vertex_t, color));
+  glEnableVertexAttribArray(3);
+
+  // note the IPointer for an integer attribute
+  glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(batch_vertex_t),
+                         (void*)offsetof(batch_vertex_t, texture_slot_index));
 
   glGenBuffers(1, ebo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);

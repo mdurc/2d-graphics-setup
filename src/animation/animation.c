@@ -111,11 +111,11 @@ void animation_update(f32 delta_time) {
   }
 }
 
-void animation_render(animation_t* animation, vec2 position, vec4 color,
-                      u32 texture_slots[8]) {
+void animation_render(animation_t* animation, vec2 position, vec2 size,
+                      vec4 color) {
   animation_definition_t* adef =
       animation_definition_get(animation->animation_definition_id);
   animation_frame_t* aframe = &adef->frames[animation->current_frame_index];
   render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column,
-                            position, NULL, animation->is_flipped);
+                            position, size, color, animation->is_flipped);
 }

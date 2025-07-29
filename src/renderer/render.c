@@ -16,11 +16,15 @@
 static f32 render_width, render_height;
 static f32 render_scale;
 
+// used for the batch rendering of textures
+// (index zero is reserved for the default WHITE white_texture_id)
+static u32 texture_slots[8] = {0};
+static u32 white_texture_id;
+
 static u32 shader_default, shader_batch;
 static u32 vao_quad, vbo_quad, ebo_quad;
 static u32 vao_line, vbo_line;
 static u32 vao_batch, vbo_batch, ebo_batch;
-static u32 texture_color;
 
 static DYNLIST(batch_vertex_t) batch_list;
 
@@ -33,7 +37,8 @@ void render_init(u32 width, u32 height, f32 scale) {
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
   render_init_batch_quads(&vao_batch, &vbo_batch, &ebo_batch);
   render_init_line(&vao_line, &vbo_line);
-  render_init_color_texture(&texture_color);
+  render_init_color_texture(&texture_slots[0]);
+  white_texture_id = texture_slots[0];
   render_init_shaders(&shader_default, &shader_batch, render_width,
                       render_height);
 
@@ -51,15 +56,26 @@ void render_begin(void) {
   dynlist_clear(batch_list); // clear the list each frame
 }
 
-static void render_batch(batch_vertex_t* vertices, size_t num_vertices,
-                         u32 texture_id) {
+static void render_batch(batch_vertex_t* vertices, size_t num_vertices) {
   // update the vbo buffer dynamically
   glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
   glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertices * sizeof(batch_vertex_t),
                   vertices);
 
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture_id);
+  ASSERT(texture_slots[0] == white_texture_id,
+         "texture slot 0 should be white_texture_id (%d), but is %d",
+         white_texture_id, texture_slots[0]);
+  for (u32 i = 0; i < 8; ++i) {
+    // fragment shader texture i = our texture id at slot[i]
+    glActiveTexture(GL_TEXTURE0 + i);
+    u32 id = texture_slots[i];
+    /* Use a valid defined texture id to avoid the following warning:
+     * UNSUPPORTED (log once): POSSIBLE ISSUE: unit 1 GLD_TEXTURE_INDEX_2D is
+     * unloadable and bound to sampler type (Float) - using zero texture because
+     * texture unloadable.
+     */
+    glBindTexture(GL_TEXTURE_2D, id == 0 ? white_texture_id : id);
+  }
 
   glUseProgram(shader_batch);
   glBindVertexArray(vao_batch);
@@ -68,7 +84,8 @@ static void render_batch(batch_vertex_t* vertices, size_t num_vertices,
   glDrawElements(GL_TRIANGLES, (num_vertices >> 2) * 6, GL_UNSIGNED_INT, NULL);
 }
 
-static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color) {
+static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color,
+                        u32 texture_slot_index) {
   vec4 tex_data = {0, 0, 1, 1}; // default data
 
   if (tex_coords != NULL) {
@@ -80,6 +97,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color) {
       .position = {position[0], position[1]},
       .tex_coords = {tex_data[0], tex_data[1]},
       .color = {color[0], color[1], color[2], color[3]},
+      .texture_slot_index = texture_slot_index,
   };
 
   // top right
@@ -87,6 +105,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color) {
       .position = {position[0] + size[0], position[1]},
       .tex_coords = {tex_data[2], tex_data[1]},
       .color = {color[0], color[1], color[2], color[3]},
+      .texture_slot_index = texture_slot_index,
   };
 
   // bottom right
@@ -94,6 +113,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color) {
       .position = {position[0] + size[0], position[1] + size[1]},
       .tex_coords = {tex_data[2], tex_data[3]},
       .color = {color[0], color[1], color[2], color[3]},
+      .texture_slot_index = texture_slot_index,
   };
 
   // bottom left
@@ -101,11 +121,12 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color) {
       .position = {position[0], position[1] + size[1]},
       .tex_coords = {tex_data[0], tex_data[3]},
       .color = {color[0], color[1], color[2], color[3]},
+      .texture_slot_index = texture_slot_index,
   };
 }
 
-void render_end(u32 batch_texture_id) {
-  render_batch(batch_list, dynlist_size(batch_list), batch_texture_id);
+void render_end(void) {
+  render_batch(batch_list, dynlist_size(batch_list));
   glfwSwapBuffers(state.window);
 }
 
@@ -126,9 +147,7 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   // GL_ELEMENT_ARRAY, so when we bind this vao, it will also bind the ebo
   // buffer that we associated to it (ebo_quad)
   glBindVertexArray(vao_quad);
-  // glDrawArrays(GL_TRIANGLES, 0, 3); // will draw the vertices from the vbo
-
-  glBindTexture(GL_TEXTURE_2D, texture_color);
+  glBindTexture(GL_TEXTURE_2D, white_texture_id);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // will draw from the ebo
 
   glBindVertexArray(0);
@@ -168,7 +187,7 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
                      &model[0][0]);
   glUniform4fv(glGetUniformLocation(shader_default, "color"), 1, color);
 
-  glBindTexture(GL_TEXTURE_2D, texture_color);
+  glBindTexture(GL_TEXTURE_2D, white_texture_id);
   glBindVertexArray(vao_line);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo_line);
@@ -199,8 +218,29 @@ static void calculate_sprite_tex_coords(vec4 result, f32 row, f32 column,
   result[3] = y + h;
 }
 
+// returns the index of the texture slot associated to texture_id (-1 if full)
+static i32 set_texture_slot(u32 texture_id) {
+  i32 free_index = -1;
+  // the zero'th index is reserved for the default color texture
+  for (i32 i = 1; i < 8; ++i) {
+    if (texture_slots[i] == texture_id) {
+      return i;
+    }
+    if (texture_slots[i] == 0) {
+      free_index = i;
+    }
+  }
+
+  if (free_index != -1) {
+    texture_slots[free_index] = texture_id;
+  }
+
+  // returns -1 on failure
+  return free_index;
+}
+
 void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
-                               f32 column, vec2 position, vec2 size,
+                               f32 column, vec2 position, vec2 size, vec4 color,
                                bool is_flipped) {
   vec4 tex_coords;
   calculate_sprite_tex_coords(tex_coords, row, column, sprite_sheet->width,
@@ -218,7 +258,10 @@ void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
   }
   vec2 bottom_left =
       (vec2){position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
-  append_quad(bottom_left, size, tex_coords, WHITE);
+
+  i32 texture_slot = set_texture_slot(sprite_sheet->texture_id);
+  ASSERT(texture_slot != -1, "need to implement flushing the texture slots");
+  append_quad(bottom_left, size, tex_coords, color, texture_slot);
 }
 
 f32 render_get_scale(void) { return render_scale; }
