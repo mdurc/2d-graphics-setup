@@ -1,4 +1,5 @@
 #include "animation/animation.h"
+#include "audio/audio.h"
 #include "config/config.h"
 #include "entity/entity.h"
 #include "game/game.h"
@@ -16,9 +17,11 @@ int main(void) {
   physics_init();
   entity_init();
   animation_init();
+  audio_init();
 
   run_game_loop();
 
+  audio_destroy();
   animation_destroy();
   entity_destroy();
   physics_destroy();

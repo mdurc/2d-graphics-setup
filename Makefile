@@ -10,7 +10,8 @@ WARNINGS 	+= -Wfloat-equal -Wmissing-declarations -Wmissing-include-dirs
 WARNINGS 	+= -Wmissing-prototypes -Wredundant-decls -Wunreachable-code
 CFLAGS 		:= $(WARNINGS) -g -MMD -MP `sdl2-config --cflags`
 
-INCFLAGS 	:= $(addprefix -I,$(LIB_DIR))
+# -isystem instead of -I to avoid compiler warnings on external libraries
+INCFLAGS 	:= $(addprefix -isystem,$(LIB_DIR))
 LDFLAGS 	:= `sdl2-config --libs` -lm -lglfw
 
 SRC_FILES := $(shell find $(SRC_DIR) $(LIB_DIR) -name '*.c')

@@ -1,6 +1,7 @@
 #include "game.h"
 
 #include "../animation/animation.h"
+#include "../audio/audio.h"
 #include "../c-lib/misc.h"
 #include "../entity/entity.h"
 #include "../font/font.h"
@@ -55,6 +56,10 @@ void run_game_loop(void) {
 
   bool is_paused = false;
   bool advance_frame = false;
+
+  music_t* drum_music;
+  audio_music_load(&drum_music, "drum_music.wav");
+  audio_music_play(drum_music);
 
   while (!glfwWindowShouldClose(state.window)) {
     entity_t* player = entity_get(e_player_id);
@@ -148,4 +153,6 @@ void run_game_loop(void) {
 
     time_update_late();
   }
+
+  audio_music_destroy(drum_music);
 }

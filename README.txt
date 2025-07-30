@@ -21,7 +21,6 @@ some directories:
 
 todo:
 - cimgui
-- soloud audio
 - look into custom allocator for c-lib
 
 `make` to build
