@@ -3,7 +3,7 @@
 #include "../c-lib/misc.h"
 #include "../io/io.h"
 #include "../state.h"
-#include "linmath.h"
+#include "linmath/linmath.h"
 #include "stb_image.h"
 
 #define GLFW_INCLUDE_NONE

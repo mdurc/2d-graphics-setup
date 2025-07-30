@@ -2,7 +2,7 @@
 
 #include "../c-lib/types.h"
 #include "../physics/physics.h"
-#include "linmath.h"
+#include "linmath/linmath.h"
 
 typedef struct entity {
   size_t body_id;

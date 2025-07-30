@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../c-lib/types.h"
-#include "linmath.h"
+#include "linmath/linmath.h"
 
 typedef struct {
   f32 width, height, cell_width, cell_height;

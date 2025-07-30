@@ -1,0 +1,9 @@
+[submodule "lib/miniaudio"]
+	path = lib/miniaudio
+	url = https://github.com/mackron/miniaudio
+[submodule "lib/cimgui"]
+	path = lib/cimgui
+	url = https://github.com/cimgui/cimgui
+[submodule "lib/linmath"]
+	path = lib/linmath
+	url = https://github.com/datenwolf/linmath.h

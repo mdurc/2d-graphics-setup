@@ -2,7 +2,7 @@
 
 #include "../c-lib/misc.h"
 #include "../renderer/render.h"
-#include "linmath.h"
+#include "linmath/linmath.h"
 
 static iv2 find_char(char ch) {
   static const char* lines[] = {

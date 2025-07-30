@@ -4,7 +4,7 @@
 #include "../c-lib/misc.h"
 
 #define MA_IMPLEMENTATION
-#include "miniaudio.h"
+#include "miniaudio/miniaudio.h"
 
 ma_engine engine;
 
