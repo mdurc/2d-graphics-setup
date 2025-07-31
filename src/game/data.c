@@ -96,9 +96,9 @@ void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet) {
   kin_id = physics_body_create((vec2){render_width * 0.85, render_height * 0.5}, (vec2){player_size * 2, player_size * 3}, (vec2){-20.f, 0}, COLLISION_LAYER_KINEMATIC, kinematic_mask, true, kinematic_on_hit, kinematic_on_hit_static);
 
   vec2 enemy_size = (vec2){player_size * 0.5, player_size * 0.5};
-  e_player_id = entity_create((vec2){render_width * 0.5f - player_size * 3, render_height * 0.5}, (vec2){player_size, player_size}, (vec2){0, 0}, COLLISION_LAYER_PLAYER, player_mask, false, (size_t)-1, player_on_hit, player_on_hit_static);
-  e_a_id = entity_create((vec2){render_width * 0.5 - 50, render_height * 0.5}, enemy_size, (vec2){400, 0}, COLLISION_LAYER_ENEMY, enemy_mask, false, (size_t)-1, NULL, enemy_on_hit_static);
-  e_b_id = entity_create((vec2){render_width * 0.5 + 50, render_height * 0.5}, enemy_size, (vec2){400, 0}, COLLISION_LAYER_ENEMY, enemy_mask, false, (size_t)-1, NULL, enemy_on_hit_static);
+  e_player_id = entity_create("player", (vec2){render_width * 0.5f - player_size * 3, render_height * 0.5}, (vec2){player_size, player_size}, (vec2){0, 0}, COLLISION_LAYER_PLAYER, player_mask, false, (size_t)-1, player_on_hit, player_on_hit_static);
+  e_a_id = entity_create("enemy one", (vec2){render_width * 0.5 - 50, render_height * 0.5}, enemy_size, (vec2){400, 0}, COLLISION_LAYER_ENEMY, enemy_mask, false, (size_t)-1, NULL, enemy_on_hit_static);
+  e_b_id = entity_create("enemy two", (vec2){render_width * 0.5 + 50, render_height * 0.5}, enemy_size, (vec2){400, 0}, COLLISION_LAYER_ENEMY, enemy_mask, false, (size_t)-1, NULL, enemy_on_hit_static);
 
   size_t player_idle_def = animation_definition_create(bg_sheet, 0.2f, 1, (u8[]){0, 1}, 2);
   size_t player_walk_def = animation_definition_create(bg_sheet, 0.2f, 1, (u8[]){2, 3}, 2);

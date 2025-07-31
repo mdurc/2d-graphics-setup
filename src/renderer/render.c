@@ -94,10 +94,11 @@ static void render_batch(batch_vertex_t* vertices, size_t num_vertices) {
   glDrawElements(GL_TRIANGLES, (num_vertices >> 2) * 6, GL_UNSIGNED_INT, NULL);
 }
 
-void render_end(void) {
+void render_batch_list(void) {
   render_batch(batch_list, dynlist_size(batch_list));
-  glfwSwapBuffers(state.window);
 }
+
+void render_end(void) { glfwSwapBuffers(state.window); }
 
 void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_default);

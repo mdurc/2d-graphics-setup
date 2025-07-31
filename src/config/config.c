@@ -15,7 +15,8 @@ static const char* CONFIG_DEfAULT =
     "up = Up\n"
     "down = Down\n"
     "escape = Escape\n"
-    "debug = F\n";
+    "debug = F\n"
+    "editor = O\n";
 
 static char tmp_buf[TMP_BUF_SIZE] = {0};
 
@@ -50,6 +51,7 @@ static int key_from_name(const char* name) {
   if (strcmp(name, "Down") == 0) return GLFW_KEY_DOWN;
   if (strcmp(name, "Escape") == 0) return GLFW_KEY_ESCAPE;
   if (strcmp(name, "F") == 0) return GLFW_KEY_F;
+  if (strcmp(name, "O") == 0) return GLFW_KEY_O;
   return -1;
 }
 
@@ -60,6 +62,8 @@ static void config_load_controls(const char* conf_buf) {
   config_key_bind(INPUT_KEY_DOWN, config_get_value(conf_buf, "down"));
   config_key_bind(INPUT_KEY_ESCAPE, config_get_value(conf_buf, "escape"));
   config_key_bind(INPUT_KEY_DEBUG, config_get_value(conf_buf, "debug"));
+  config_key_bind(INPUT_KEY_EDITOR_TOGGLE,
+                  config_get_value(conf_buf, "editor"));
 }
 
 static int config_load(void) {

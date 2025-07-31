@@ -45,6 +45,9 @@ void physics_init(void);
 void physics_destroy(void);
 void physics_deactivate(size_t idx);
 
+f32* physics_get_gravity(void);
+f32* physics_get_terminal_velocity(void);
+
 void physics_update(f32 delta_time);
 void physics_clamp_body(body_t* body);
 

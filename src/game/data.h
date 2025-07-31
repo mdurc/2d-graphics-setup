@@ -19,6 +19,9 @@ void kinematic_on_hit(body_t* self, body_t* other, hit_t hit);
 
 void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet);
 
+extern bool is_paused;
+extern bool advance_frame;
+
 extern f32 player_size;
 extern vec4 player_aabb_color;
 extern bool player_is_grounded;

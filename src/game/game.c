@@ -3,6 +3,7 @@
 #include "../animation/animation.h"
 #include "../audio/audio.h"
 #include "../c-lib/misc.h"
+#include "../editor.h"
 #include "../entity/entity.h"
 #include "../font/font.h"
 #include "../renderer/render.h"
@@ -14,6 +15,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
+
+bool is_paused = false;
+bool advance_frame = false;
 
 void input_handle(body_t* body_player) {
   if (state.input.escape > 0) {
@@ -54,12 +58,9 @@ void run_game_loop(void) {
 
   f32 height = render_get_render_size().y;
 
-  bool is_paused = false;
-  bool advance_frame = false;
-
-  music_t* drum_music;
-  audio_music_load(&drum_music, "drum_music.wav");
-  audio_music_play(drum_music);
+  // music_t* drum_music;
+  // audio_music_load(&drum_music, "drum_music.wav");
+  // audio_music_play(drum_music);
 
   while (!glfwWindowShouldClose(state.window)) {
     entity_t* player = entity_get(e_player_id);
@@ -73,10 +74,16 @@ void run_game_loop(void) {
     time_update();
     input_update();
 
-    key_state_t debug = state.input.debug;
-    is_paused = (debug == KS_HELD || debug == KS_PRESSED);
-
+    if (state.input.debug == KS_PRESSED) {
+      is_paused = !is_paused;
+    }
     advance_frame = false;
+
+    if (state.input.editor_toggle == KS_PRESSED) {
+      editor_toggle_visibility();
+    }
+    editor_update();
+
     if (is_paused) {
       // if paused and a movement key is pressed, advance one frame
       if (state.input.left == KS_PRESSED || state.input.right == KS_PRESSED ||
@@ -109,15 +116,17 @@ void run_game_loop(void) {
     render_test_triangle(shader_temp, vao_two);
 
     // Render all of the aabbs
-    render_aabb((f32*)&sb_a->aabb, WHITE);                    // Boundary A
-    render_aabb((f32*)&sb_b->aabb, WHITE);                    // Boundary B
-    render_aabb((f32*)&sb_c->aabb, WHITE);                    // Boundary C
-    render_aabb((f32*)&sb_d->aabb, WHITE);                    // Boundary D
-    render_aabb((f32*)&sb_e->aabb, WHITE);                    // Boundary E
-    render_aabb((f32*)&kin->aabb, WHITE);                     // Kinematic Block
-    render_aabb((f32*)&body_player->aabb, player_aabb_color); // Player body
-    render_aabb((f32*)&body_enemy_one->aabb, WHITE);          // enemy one body
-    render_aabb((f32*)&body_enemy_two->aabb, WHITE);          // enemy two body
+    if (editor_is_debug()) {
+      render_aabb((f32*)&sb_a->aabb, WHITE); // Boundary A
+      render_aabb((f32*)&sb_b->aabb, WHITE); // Boundary B
+      render_aabb((f32*)&sb_c->aabb, WHITE); // Boundary C
+      render_aabb((f32*)&sb_d->aabb, WHITE); // Boundary D
+      render_aabb((f32*)&sb_e->aabb, WHITE); // Boundary E
+      render_aabb((f32*)&kin->aabb, WHITE);  // Kinematic Block
+      render_aabb((f32*)&body_player->aabb, player_aabb_color); // player body
+      render_aabb((f32*)&body_enemy_one->aabb, WHITE); // enemy one body
+      render_aabb((f32*)&body_enemy_two->aabb, WHITE); // enemy two body
+    }
 
     // Render the currently active entity animations from sprite sheet
     for (size_t i = 0; i < entity_count(); ++i) {
@@ -145,6 +154,8 @@ void run_game_loop(void) {
         TURQUOISE);
 
     // batch render the sprite animations/textures
+    render_batch_list();
+    editor_render();
     render_end();
 
     // reset the Player's AABB color
@@ -154,5 +165,5 @@ void run_game_loop(void) {
     time_update_late();
   }
 
-  audio_music_destroy(drum_music);
+  // audio_music_destroy(drum_music);
 }

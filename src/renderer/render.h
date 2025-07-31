@@ -31,6 +31,8 @@ void render_quad(vec2 pos, vec2 size, vec4 color);
 void render_quad_lines(vec2 pos, vec2 size, vec4 color);
 void render_line_segment(vec2 start, vec2 end, vec4 color);
 void render_aabb(f32* aabb, vec4 color);
+
+void render_batch_list(void);
 void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
                                f32 column, vec2 position, vec2 size, vec4 color,
                                bool is_flipped);

@@ -21,7 +21,9 @@ entity_t* entity_get(size_t idx) {
   return &entity_list[idx];
 }
 
-size_t entity_create(vec2 position, vec2 size, vec2 velocity,
+const char* entity_get_name(size_t idx) { return entity_get(idx)->name; }
+
+size_t entity_create(const char* name, vec2 position, vec2 size, vec2 velocity,
                      u8 collision_layer, u8 collision_mask, bool is_kinematic,
                      size_t animation_id, on_hit_func on_hit,
                      on_hit_static_func on_hit_static) {
@@ -47,6 +49,7 @@ size_t entity_create(vec2 position, vec2 size, vec2 velocity,
                                      on_hit_static),
       .animation_id = animation_id,
       .is_active = true,
+      .name = name,
   };
 
   return id;

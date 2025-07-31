@@ -38,4 +38,6 @@ void input_update(void) {
                    &state.input.escape);
   update_key_state(key_current[state.config.keybinds[INPUT_KEY_DEBUG]],
                    &state.input.debug);
+  update_key_state(key_current[state.config.keybinds[INPUT_KEY_EDITOR_TOGGLE]],
+                   &state.input.editor_toggle);
 }

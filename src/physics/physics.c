@@ -32,6 +32,9 @@ void physics_deactivate(size_t idx) {
   physics_body_get(idx)->is_active = false;
 }
 
+f32* physics_get_gravity(void) { return &gravity; }
+f32* physics_get_terminal_velocity(void) { return &terminal_velocity; }
+
 static void update_sweep_result(hit_t* result, aabb_t a, aabb_t b,
                                 size_t other_id, vec2 velocity,
                                 u8 a_collision_mask, u8 b_collision_layer) {
