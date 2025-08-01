@@ -32,8 +32,8 @@ animation_definition_t* animation_definition_get(size_t idx) {
   return &animation_definition_list[idx];
 }
 
-size_t animation_definition_create(sprite_sheet_t* sprite_sheet, f32 duration,
-                                   u8 row, u8* columns, u8 frame_count) {
+size_t animation_definition_create(sprite_sheet_t* sprite_sheet, f32* durations,
+                                   u8* rows, u8* columns, u8 frame_count) {
   ASSERT(frame_count <= MAX_FRAMES);
 
   animation_definition_t def = {0};
@@ -44,8 +44,8 @@ size_t animation_definition_create(sprite_sheet_t* sprite_sheet, f32 duration,
   for (u8 i = 0; i < frame_count; ++i) {
     def.frames[i] = (animation_frame_t){
         .column = columns[i],
-        .row = row,
-        .duration = duration,
+        .row = rows[i],
+        .duration = durations[i],
     };
   }
 

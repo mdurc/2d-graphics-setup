@@ -32,8 +32,8 @@ void animation_deactivate(size_t idx);
 // instance approach so that each animation can have different frame timing/sync
 size_t animation_definition_count(void);
 animation_definition_t* animation_definition_get(size_t idx);
-size_t animation_definition_create(sprite_sheet_t* sprite_sheet, f32 duration,
-                                   u8 row, u8* columns, u8 frame_count);
+size_t animation_definition_create(sprite_sheet_t* sprite_sheet, f32* durations,
+                                   u8* rows, u8* columns, u8 frame_count);
 
 size_t animation_count(void);
 animation_t* animation_get(size_t idx);
