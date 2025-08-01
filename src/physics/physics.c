@@ -153,7 +153,8 @@ void physics_update(f32 delta_time) {
     // kinematic bodies are normal bodies but do not follow gravity
     if (!body->is_kinematic) {
       body->velocity[0] += body->acceleration[0];
-      body->velocity[1] += body->acceleration[1] + gravity;
+      body->velocity[1] +=
+          body->acceleration[1] + (gravity * body->gravity_scale);
       if (terminal_velocity > body->velocity[1]) {
         body->velocity[1] = terminal_velocity;
       }
@@ -194,8 +195,9 @@ body_t* physics_body_get(size_t idx) {
 }
 
 size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
-                           u8 collision_layer, u8 collision_mask,
-                           bool is_kinematic, on_hit_func on_hit,
+                           f32 gravity_scale, u8 collision_layer,
+                           u8 collision_mask, bool is_kinematic,
+                           on_hit_func on_hit,
                            on_hit_static_func on_hit_static) {
   size_t list_size = dynlist_size(body_list);
   size_t idx = list_size;
@@ -220,6 +222,7 @@ size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
               .half_size = {size[0] * 0.5f, size[1] * 0.5f},
           },
       .velocity = {velocity[0], velocity[1]},
+      .gravity_scale = gravity_scale,
       .collision_layer = collision_layer,
       .collision_mask = collision_mask,
       .on_hit = on_hit,

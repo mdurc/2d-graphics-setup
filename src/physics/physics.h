@@ -19,6 +19,7 @@ typedef struct {
 struct body {
   aabb_t aabb;
   vec2 velocity;
+  f32 gravity_scale;
   vec2 acceleration;
   on_hit_func on_hit;
   on_hit_static_func on_hit_static;
@@ -54,8 +55,9 @@ void physics_clamp_body(body_t* body);
 size_t physics_body_count(void);
 body_t* physics_body_get(size_t idx);
 size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
-                           u8 collision_layer, u8 collision_mask,
-                           bool is_kinematic, on_hit_func on_hit,
+                           f32 gravity_scale, u8 collision_layer,
+                           u8 collision_mask, bool is_kinematic,
+                           on_hit_func on_hit,
                            on_hit_static_func on_hit_static);
 
 size_t physics_static_body_count(void);
