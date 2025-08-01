@@ -103,10 +103,10 @@ static u32 render_create_shader(const char* path_vert, const char* path_frag) {
 void render_init_shaders(u32* shader_program, u32* shader_batch,
                          f32 render_width, f32 render_height) {
   mat4x4 projection;
-  *shader_program = render_create_shader("./src/shaders/vert.glsl",
-                                         "./src/shaders/frag.glsl");
-  *shader_batch = render_create_shader("./src/shaders/batch_vert.glsl",
-                                       "./src/shaders/batch_frag.glsl");
+  *shader_program = render_create_shader("./src/engine/shaders/vert.glsl",
+                                         "./src/engine/shaders/frag.glsl");
+  *shader_batch = render_create_shader("./src/engine/shaders/batch_vert.glsl",
+                                       "./src/engine/shaders/batch_frag.glsl");
 
   // orthographic camera view to get the pixel size we want, and applying the
   // projection to the entire window.

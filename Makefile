@@ -11,6 +11,9 @@ PROGRAM						:= a.out
 SRC_DIR						:= src
 BIN_DIR						:= bin
 LIB_DIR						:= lib
+ENGINE_DIR				:= $(SRC_DIR)/engine
+ENGINE_HEADER			:= $(ENGINE_DIR)/engine.h
+ENGINE_LIB				:= $(BIN_DIR)/libengine.a
 
 UNAME_S						:= $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -71,8 +74,10 @@ ifeq ($(CIMGUI_FREETYPE),1)
 	LDFLAGS 				+= `pkg-config --libs freetype2`
 endif
 
+ENGINE_SRC_FILES	:= $(shell find $(ENGINE_DIR) -name '*.c')
+ENGINE_OBJ_FILES	:= $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/%.o,$(ENGINE_SRC_FILES))
 
-SRC_FILES					:= $(shell find $(SRC_DIR) -name '*.c') \
+SRC_FILES					:= $(wildcard $(SRC_DIR)/*.c) \
 										 lib/glad.c
 OBJ_FILES					:= $(patsubst $(LIB_DIR)/%.c,$(BIN_DIR)/%.o, \
 										 $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/%.o,$(SRC_FILES)))
@@ -83,11 +88,14 @@ DEP_FILES					:= $(patsubst %.o,%.d,$(OBJ_FILES) $(CIMGUI_OBJ_FILES))
 all: $(PROGRAM)
 
 # link final program with c++ compiler due to using cimgui now
-$(PROGRAM): $(OBJ_FILES) $(CIMGUI_LIB)
-	$(CXX) $(OBJ_FILES) -o $@ $(CIMGUI_LIB) $(LDFLAGS)
+$(PROGRAM): $(OBJ_FILES) $(CIMGUI_LIB) $(ENGINE_LIB)
+	$(CXX) $(OBJ_FILES) -o $@ $(CIMGUI_LIB) $(ENGINE_LIB) $(LDFLAGS)
 
 # create/maintain the library archive for the static cimgui library
 $(CIMGUI_LIB): $(CIMGUI_OBJ_FILES)
+	ar rcs $@ $^
+
+$(ENGINE_LIB): $(ENGINE_OBJ_FILES)
 	ar rcs $@ $^
 
 # project C source files
@@ -110,6 +118,20 @@ clean:
 
 rebuild: clean all
 
+# --- Installation ---
+PREFIX?=/usr/local
+INSTALL_LIB_DIR = $(PREFIX)/lib
+INSTALL_INCLUDE_DIR = $(PREFIX)/include
+
+install: $(ENGINE_LIB)
+	sudo mkdir -p $(INSTALL_LIB_DIR)
+	sudo mkdir -p $(INSTALL_INCLUDE_DIR)
+	sudo cp $(ENGINE_HEADER) $(INSTALL_INCLUDE_DIR)
+	sudo cp $(ENGINE_LIB) $(INSTALL_LIB_DIR)
+
+uninstall:
+	sudo rm -f $(INSTALL_INCLUDE_DIR)/engine.h $(INSTALL_LIB_DIR)/libengine.a
+
 -include $(DEP_FILES)
 
-.PHONY: all clean rebuild
+.PHONY: all clean rebuild install uninstall

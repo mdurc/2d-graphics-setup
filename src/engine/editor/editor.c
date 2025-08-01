@@ -1,8 +1,7 @@
 #include "editor.h"
 
-#include "entity/entity.h"
-#include "game/data.h"
-#include "state.h"
+#include "../entity/entity.h"
+#include "../state.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -34,7 +33,7 @@ void editor_init(GLFWwindow* window) {
 
   // configuration
   ioptr = igGetIO();
-  ioptr->IniFilename = NULL; // disables the imgui.ini file
+  // ioptr->IniFilename = NULL; // disables the imgui.ini file
   ioptr->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   // ioptr->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 #ifdef IMGUI_HAS_DOCK
@@ -110,17 +109,17 @@ void editor_update(void) {
   if (igCollapsingHeader_TreeNodeFlags("Physics",
                                        ImGuiTreeNodeFlags_DefaultOpen)) {
     // Pause/Play button
-    if (igButton(is_paused ? "Play" : "Pause", (ImVec2){0, 0})) {
-      is_paused = !is_paused;
-    }
+    // if (igButton(is_paused ? "Play" : "Pause", (ImVec2){0, 0})) {
+    //  is_paused = !is_paused;
+    //}
 
     // Advance one frame if paused
-    if (is_paused) {
-      igSameLine(0, 5);
-      if (igButton("Step Frame", (ImVec2){0, 0})) {
-        advance_frame = true;
-      }
-    }
+    // if (is_paused) {
+    //  igSameLine(0, 5);
+    //  if (igButton("Step Frame", (ImVec2){0, 0})) {
+    //    advance_frame = true;
+    //  }
+    //}
 
     igSliderFloat("Gravity", physics_get_gravity(), -2000.f, 0.f, "%.2f", 0);
   }
