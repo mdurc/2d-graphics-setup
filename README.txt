@@ -11,6 +11,7 @@ features:
 - Basic animation system for the sprite frames
 - Basic input handling and key bind configuration
 - Font rendering system with custom font sprite sheet
+- Very basic audio capabilities
 
 some directories:
 - game/: this is where the game specific game loop and implementation would go, with all of the entity creation, etc.
