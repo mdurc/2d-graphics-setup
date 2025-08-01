@@ -88,7 +88,7 @@ size_t animation_create(size_t animation_definition_id, bool does_loop) {
 
   *animation = (animation_t){
       .animation_definition_id = animation_definition_id,
-      .current_frame_time = 0.0f,
+      .current_frame_time = adef->frames[0].duration,
       .current_frame_index = 0,
       .does_loop = does_loop,
       .is_active = true,
