@@ -19,8 +19,4 @@ some directories:
 - lib/: external libraries (GLAD, linmath)
 - res/: game assets (sprite sheets)
 
-todo:
-- cimgui
-- look into custom allocator for c-lib
-
 `make` to build
