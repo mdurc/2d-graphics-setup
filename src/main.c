@@ -11,6 +11,9 @@
 #include "engine/state.h"
 #include "engine/time/time.h"
 
+#define CREATE_BLOCK(_x, _y, _w, _h) \
+    physics_static_body_create((vec2){_x, _y}, (vec2){_w, _h}, COLLISION_LAYER_TERRAIN);
+
 // -------- function prototypes --------
 void player_on_hit(body_t* self, body_t* other, hit_t hit);
 void player_on_hit_static(body_t* self, static_body_t* other, hit_t hit);
@@ -91,39 +94,26 @@ void kinematic_on_hit(body_t* self, body_t* other, hit_t hit) {
 // -------- data setup initialization --------
 void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet) {
   fv2 render_size = render_get_render_size();
-  f32 render_scale = render_get_render_scale();
 
   f32 render_width = render_size.x;
   f32 render_height = render_size.y;
-  f32 render_half_w = render_width * 0.5f;
-  f32 render_half_h = render_height * 0.5f;
+  f32 half_w = render_width * 0.5f;
+  f32 half_h = render_height * 0.5f;
 
-  f32 margin = 12;
-  f32 thickness = player_size / render_scale;
   f32 player_1_5x = player_size * 1.5f;
 
   vec2 enemy_size = {player_size * 0.5f, player_size * 0.5f};
   vec2 enemy_vel = {400, 0};
 
   // static body boundaries
-  sb_a_id = physics_static_body_create(
-      (vec2){render_half_w, render_height - margin},
-      (vec2){render_width - 1, thickness}, COLLISION_LAYER_TERRAIN);
-  sb_b_id = physics_static_body_create(
-      (vec2){render_width - margin, render_half_h},
-      (vec2){thickness, render_height - 1}, COLLISION_LAYER_TERRAIN);
-  sb_c_id = physics_static_body_create((vec2){render_half_w, margin},
-                                       (vec2){render_width - 1, thickness},
-                                       COLLISION_LAYER_TERRAIN);
-  sb_d_id = physics_static_body_create((vec2){margin, render_half_h},
-                                       (vec2){thickness, render_height - 1},
-                                       COLLISION_LAYER_TERRAIN);
-  sb_e_id = physics_static_body_create((vec2){render_half_w, render_half_h},
-                                       (vec2){player_1_5x, player_1_5x},
-                                       COLLISION_LAYER_TERRAIN);
+  sb_a_id = CREATE_BLOCK(half_w, render_height - 12, render_width - 1, 12);
+  sb_b_id = CREATE_BLOCK(render_width - 12, half_h, 12, render_height - 1);
+  sb_c_id = CREATE_BLOCK(half_w, 12, render_width - 1, 12);
+  sb_d_id = CREATE_BLOCK(12, half_h, 12, render_height - 1);
+  sb_e_id = CREATE_BLOCK(half_w, half_h, player_1_5x, player_1_5x);
 
   // kinematic body
-  kin_id = physics_body_create((vec2){render_width * 0.85f, render_half_h},
+  kin_id = physics_body_create((vec2){render_width * 0.85f, half_h},
                                (vec2){player_size * 2.0f, player_size * 3.0f},
                                (vec2){-20.f, 0}, 1.0f,
                                COLLISION_LAYER_KINEMATIC, kinematic_mask, true,
@@ -132,19 +122,17 @@ void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet) {
   // entities
   vec2 zero_vel = {0, 0};
   e_player_id = entity_create(
-      "player", (vec2){render_half_w - player_size * 3.0f, render_half_h},
+      "player", (vec2){half_w - player_size * 3.0f, half_h},
       (vec2){player_size, player_size}, zero_vel, 1.0f, COLLISION_LAYER_PLAYER,
       player_mask, false, (size_t)-1, player_on_hit, player_on_hit_static);
 
-  e_a_id =
-      entity_create("enemy one", (vec2){render_half_w - 50, render_half_h},
-                    enemy_size, enemy_vel, 1.0f, COLLISION_LAYER_ENEMY,
-                    enemy_mask, false, (size_t)-1, NULL, enemy_on_hit_static);
+  e_a_id = entity_create("enemy one", (vec2){half_w - 50, half_h}, enemy_size,
+                         enemy_vel, 1.0f, COLLISION_LAYER_ENEMY, enemy_mask,
+                         false, (size_t)-1, NULL, enemy_on_hit_static);
 
-  e_b_id =
-      entity_create("enemy two", (vec2){render_half_w + 50, render_half_h},
-                    enemy_size, enemy_vel, 1.0f, COLLISION_LAYER_ENEMY,
-                    enemy_mask, false, (size_t)-1, NULL, enemy_on_hit_static);
+  e_b_id = entity_create("enemy two", (vec2){half_w + 50, half_h}, enemy_size,
+                         enemy_vel, 1.0f, COLLISION_LAYER_ENEMY, enemy_mask,
+                         false, (size_t)-1, NULL, enemy_on_hit_static);
 
   // player animations
   f32* anim_times = (f32[]){0.2f, 0.2f};
