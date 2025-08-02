@@ -198,6 +198,8 @@ static const char* get_entity_name_for_body(size_t body_id) {
 static void render_physics_inspector(void) {
   if (igCollapsingHeader_TreeNodeFlags("Physics Inspector", NO_FLAGS)) {
     LABELED_SLIDER_FLOAT("Gravity", physics_get_gravity(), -2000.f, 0.f);
+    LABELED_SLIDER_FLOAT("Terminal", physics_get_terminal_velocity(), -7000.f,
+                         0.f);
     igText("Body Count: %zu", physics_body_count());
     igText("Static Body Count: %zu", physics_static_body_count());
 
