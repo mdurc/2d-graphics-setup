@@ -191,7 +191,12 @@ static const char* get_entity_name_for_body(size_t body_id) {
       return entity->name;
     }
   }
-  return "Body (No Entity)";
+  static char buffers[32][32];
+  static int current_buffer = 0;
+  char* buffer = buffers[current_buffer];
+  current_buffer = (current_buffer + 1) % 32;
+  snprintf(buffer, sizeof(buffers[0]), "Body (No Entity) %zu", body_id);
+  return buffer;
 }
 
 static void render_physics_inspector(void) {

@@ -67,7 +67,7 @@ void render_destroy(void) {
 }
 
 void render_begin(void) {
-  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   dynlist_clear(sprite_batch_list); // clear the list each frame
   dynlist_clear(line_batch_list);
