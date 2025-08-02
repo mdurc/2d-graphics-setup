@@ -214,26 +214,21 @@ int main(void) {
   (void)height;
 
   while (!glfwWindowShouldClose(state.window)) {
-    // get all of the data from the ids (ids bc the ptrs could be invalidated)
-    static_body_t* sb_a = physics_static_body_get(sb_a_id);
-    static_body_t* sb_b = physics_static_body_get(sb_b_id);
-    static_body_t* sb_c = physics_static_body_get(sb_c_id);
-    static_body_t* sb_d = physics_static_body_get(sb_d_id);
-    static_body_t* sb_e = physics_static_body_get(sb_e_id);
-    body_t* kin = physics_body_get(kin_id);
+    // get data from the ids (using ids bc the ptrs could be invalidated)
     entity_t* player = entity_get(e_player_id);
-    entity_t* enemy_one = entity_get(e_a_id);
-    entity_t* enemy_two = entity_get(e_b_id);
     body_t* body_player = physics_body_get(player->body_id);
-    body_t* body_enemy_one = physics_body_get(enemy_one->body_id);
-    body_t* body_enemy_two = physics_body_get(enemy_two->body_id);
 
     // always update the time and input handler
     time_update();
     input_update();
 
     if (state.input.debug == KS_PRESSED) is_paused = !is_paused;
-    if (state.input.editor_toggle == KS_PRESSED) editor_toggle_visibility();
+    if (state.input.editor_toggle == KS_PRESSED) {
+      editor_toggle_visibility();
+      bool is_visible = editor_is_visible();
+      glfwSetInputMode(state.window, GLFW_CURSOR,
+                       is_visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
+    }
     editor_update(); // after debug keybind so that editor takes priority
 
     advance_frame = false;
@@ -263,21 +258,21 @@ int main(void) {
 
     // render all of the aabbs if we are in debug mode
     if (editor_is_debug()) {
-      render_aabb((f32*)&sb_a->aabb, WHITE); // Boundary A
-      render_aabb((f32*)&sb_b->aabb, WHITE); // Boundary B
-      render_aabb((f32*)&sb_c->aabb, WHITE); // Boundary C
-      render_aabb((f32*)&sb_d->aabb, WHITE); // Boundary D
-      render_aabb((f32*)&sb_e->aabb, WHITE); // Boundary E
-      render_aabb((f32*)&kin->aabb, WHITE);  // Kinematic Block
+      for (size_t i = 0; i < physics_body_count(); ++i) {
+        body_t* body = physics_body_get(i);
+        render_aabb((f32*)&body->aabb, WHITE);
+      }
+      for (size_t i = 0; i < physics_static_body_count(); ++i) {
+        static_body_t* body = physics_static_body_get(i);
+        render_aabb((f32*)&body->aabb, WHITE);
+      }
       render_aabb((f32*)&body_player->aabb, player_aabb_color); // player body
-      render_aabb((f32*)&body_enemy_one->aabb, WHITE); // enemy one body
-      render_aabb((f32*)&body_enemy_two->aabb, WHITE); // enemy two body
     }
 
     // render the currently active entity animations from sprite sheet
     for (size_t i = 0; i < entity_count(); ++i) {
       entity_t* entity = entity_get(i);
-      if (entity->animation_id == (size_t)-1) {
+      if (!entity->is_active || entity->animation_id == (size_t)-1) {
         // it does not have an animation id right now, just skip
         continue;
       }

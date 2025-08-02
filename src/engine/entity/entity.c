@@ -14,6 +14,12 @@ void entity_destroy(void) {
   LOG("Entity system deinitialized");
 }
 
+void entity_deactivate(size_t idx) {
+  entity_t* entity = entity_get(idx);
+  entity->is_active = false;
+  physics_deactivate(entity->body_id);
+}
+
 size_t entity_count(void) { return dynlist_size(entity_list); }
 
 entity_t* entity_get(size_t idx) {

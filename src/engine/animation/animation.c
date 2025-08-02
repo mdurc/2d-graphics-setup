@@ -18,10 +18,7 @@ void animation_destroy(void) {
   LOG("Animation system deinitialized");
 }
 
-void animation_deactivate(size_t idx) {
-  ASSERT(idx < dynlist_size(animation_list));
-  animation_list[idx].is_active = false;
-}
+void animation_deactivate(size_t idx) { animation_get(idx)->is_active = false; }
 
 size_t animation_definition_count(void) {
   return dynlist_size(animation_definition_list);

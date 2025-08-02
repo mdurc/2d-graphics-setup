@@ -13,6 +13,7 @@ typedef struct entity {
 
 void entity_init(void);
 void entity_destroy(void);
+void entity_deactivate(size_t idx);
 
 size_t entity_count(void);
 entity_t* entity_get(size_t idx);

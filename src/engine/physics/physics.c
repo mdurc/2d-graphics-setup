@@ -174,15 +174,20 @@ void physics_update(f32 delta_time) {
 }
 
 void physics_clamp_body(body_t* body) {
-  f32 x = body->aabb.position[0];
-  f32 y = body->aabb.position[1];
   fv2 render_size = render_get_render_size();
 
-  body->aabb.position[0] = clamp(x, 0, render_size.x);
-  body->aabb.position[1] = clamp(y, 0, render_size.y);
+  vec2 min_bounds = {body->aabb.half_size[0], body->aabb.half_size[1]};
+  vec2 max_bounds = {render_size.x - body->aabb.half_size[0],
+                     render_size.y - body->aabb.half_size[1]};
 
-  if (!float_eq(body->aabb.position[0], x) ||
-      !float_eq(body->aabb.position[1], y)) {
+  f32 original_x = body->aabb.position[0];
+  f32 original_y = body->aabb.position[1];
+
+  body->aabb.position[0] = clamp(original_x, min_bounds[0], max_bounds[0]);
+  body->aabb.position[1] = clamp(original_y, min_bounds[1], max_bounds[1]);
+
+  if (!float_eq(body->aabb.position[0], original_x) ||
+      !float_eq(body->aabb.position[1], original_y)) {
     LOG("CLAMPED body position");
   }
 }
