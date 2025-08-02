@@ -100,13 +100,18 @@ static u32 render_create_shader(const char* path_vert, const char* path_frag) {
   return shader_program;
 }
 
-void render_init_shaders(u32* shader_program, u32* shader_batch,
-                         f32 render_width, f32 render_height) {
+void render_init_shaders(u32* shader_program, u32* shader_sprite_batch,
+                         u32* shader_line_batch, f32 render_width,
+                         f32 render_height) {
   mat4x4 projection;
-  *shader_program = render_create_shader("./src/engine/shaders/vert.glsl",
-                                         "./src/engine/shaders/frag.glsl");
-  *shader_batch = render_create_shader("./src/engine/shaders/batch_vert.glsl",
-                                       "./src/engine/shaders/batch_frag.glsl");
+  *shader_program = render_create_shader("./src/engine/shaders/default.vert",
+                                         "./src/engine/shaders/default.frag");
+  *shader_sprite_batch =
+      render_create_shader("./src/engine/shaders/texture_batch.vert",
+                           "./src/engine/shaders/texture_batch.frag");
+  *shader_line_batch =
+      render_create_shader("./src/engine/shaders/line_batch.vert",
+                           "./src/engine/shaders/line_batch.frag");
 
   // orthographic camera view to get the pixel size we want, and applying the
   // projection to the entire window.
@@ -116,14 +121,19 @@ void render_init_shaders(u32* shader_program, u32* shader_batch,
   glUniformMatrix4fv(glGetUniformLocation(*shader_program, "projection"), 1,
                      GL_FALSE, &projection[0][0]);
 
-  glUseProgram(*shader_batch);
-  glUniformMatrix4fv(glGetUniformLocation(*shader_batch, "projection"), 1,
+  glUseProgram(*shader_line_batch);
+  glUniformMatrix4fv(glGetUniformLocation(*shader_line_batch, "projection"), 1,
                      GL_FALSE, &projection[0][0]);
+
+  glUseProgram(*shader_sprite_batch);
+  glUniformMatrix4fv(glGetUniformLocation(*shader_sprite_batch, "projection"),
+                     1, GL_FALSE, &projection[0][0]);
 
   // the texture slot represents what texture is used for the active texture
   // (ie, GL_TEXTURE0, GL_TEXTURE1, etc).
   int slots[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  glUniform1iv(glGetUniformLocation(*shader_batch, "texture_slots"), 8, slots);
+  glUniform1iv(glGetUniformLocation(*shader_sprite_batch, "texture_slots"), 8,
+               slots);
   /*
   Each batch vertex will have a texture slot index. The slot index maps to the
   texture id in the engine. When we go to render the batch, we then link the
@@ -194,7 +204,7 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // for wireframe mode
 }
 
-void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
+void render_init_batch_texture_quads(u32* vao, u32* vbo, u32* ebo) {
   glGenVertexArrays(1, vao);
   glBindVertexArray(*vao);
 
@@ -217,26 +227,28 @@ void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
 
   glGenBuffers(1, vbo);
   glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-  glBufferData(GL_ARRAY_BUFFER, MAX_BATCH_VERTICES * sizeof(batch_vertex_t),
-               NULL, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER,
+               MAX_BATCH_VERTICES * sizeof(batch_sprite_vertex_t), NULL,
+               GL_DYNAMIC_DRAW);
   // vbo data is NULL, as we will be updating the contents at each frame,
   // thus we want touse GL_DYNAMIC_DRAW, just like with the line segments
 
   // [x, y], [u, v], [r, g, b, a], [texture_slot]
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
-                        (void*)offsetof(batch_vertex_t, position));
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(batch_sprite_vertex_t),
+                        (void*)offsetof(batch_sprite_vertex_t, position));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
-                        (void*)offsetof(batch_vertex_t, tex_coords));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(batch_sprite_vertex_t),
+                        (void*)offsetof(batch_sprite_vertex_t, tex_coords));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(batch_vertex_t),
-                        (void*)offsetof(batch_vertex_t, color));
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(batch_sprite_vertex_t),
+                        (void*)offsetof(batch_sprite_vertex_t, color));
   glEnableVertexAttribArray(3);
 
   // note the IPointer for an integer attribute
-  glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(batch_vertex_t),
-                         (void*)offsetof(batch_vertex_t, texture_slot_index));
+  glVertexAttribIPointer(
+      3, 1, GL_UNSIGNED_INT, sizeof(batch_sprite_vertex_t),
+      (void*)offsetof(batch_sprite_vertex_t, texture_slot_index));
 
   glGenBuffers(1, ebo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
@@ -246,6 +258,28 @@ void render_init_batch_quads(u32* vao, u32* vbo, u32* ebo) {
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void render_init_batch_lines(u32* vao, u32* vbo) {
+  glGenVertexArrays(1, vao);
+  glBindVertexArray(*vao);
+
+  glGenBuffers(1, vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
+  glBufferData(GL_ARRAY_BUFFER, MAX_BATCH_LINES * sizeof(batch_line_vertex_t),
+               NULL, GL_DYNAMIC_DRAW);
+
+  // [x, y], [r, g, b, a]
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(batch_line_vertex_t),
+                        (void*)offsetof(batch_line_vertex_t, position));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(batch_line_vertex_t),
+                        (void*)offsetof(batch_line_vertex_t, color));
+
+  // no need for ebo with lines
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void render_init_line(u32* vao, u32* vbo) {

@@ -20,12 +20,15 @@ static f32 render_scale;
 static u32 texture_slots[8] = {0};
 static u32 white_texture_id;
 
-static u32 shader_default, shader_batch;
+static u32 shader_default, shader_batch, shader_line_batch;
 static u32 vao_quad, vbo_quad, ebo_quad;
 static u32 vao_line, vbo_line;
-static u32 vao_batch, vbo_batch, ebo_batch;
 
-static DYNLIST(batch_vertex_t) batch_list;
+static u32 vao_sprite_batch, vbo_sprite_batch, ebo_sprite_batch;
+static u32 vao_line_batch, vbo_line_batch;
+
+static DYNLIST(batch_sprite_vertex_t) sprite_batch_list;
+static DYNLIST(batch_line_vertex_t) line_batch_list;
 
 void render_init(u32 width, u32 height, f32 scale) {
   render_init_window(width, height);
@@ -34,25 +37,31 @@ void render_init(u32 width, u32 height, f32 scale) {
   render_height = height / scale;
 
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
-  render_init_batch_quads(&vao_batch, &vbo_batch, &ebo_batch);
   render_init_line(&vao_line, &vbo_line);
   render_init_color_texture(&texture_slots[0]);
   white_texture_id = texture_slots[0];
-  render_init_shaders(&shader_default, &shader_batch, render_width,
-                      render_height);
+
+  render_init_batch_lines(&vao_line_batch, &vbo_line_batch);
+  render_init_batch_texture_quads(&vao_sprite_batch, &vbo_sprite_batch,
+                                  &ebo_sprite_batch);
+
+  render_init_shaders(&shader_default, &shader_batch, &shader_line_batch,
+                      render_width, render_height);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   stbi_set_flip_vertically_on_load(1);
 
-  batch_list = dynlist_create(batch_vertex_t, 8);
+  sprite_batch_list = dynlist_create(batch_sprite_vertex_t, 8);
+  line_batch_list = dynlist_create(batch_line_vertex_t, 8);
 
   LOG("Renderer system initialized");
 }
 
 void render_destroy(void) {
-  dynlist_destroy(batch_list);
+  dynlist_destroy(sprite_batch_list);
+  dynlist_destroy(line_batch_list);
   glfwTerminate();
   LOG("Renderer system deinitialized");
 }
@@ -60,17 +69,22 @@ void render_destroy(void) {
 void render_begin(void) {
   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  dynlist_clear(batch_list); // clear the list each frame
+  dynlist_clear(sprite_batch_list); // clear the list each frame
+  dynlist_clear(line_batch_list);
 }
 
 f32 render_get_render_scale(void) { return render_scale; }
 fv2 render_get_render_size(void) { return (fv2){render_width, render_height}; }
 
-static void render_batch(batch_vertex_t* vertices, size_t num_vertices) {
+void render_sprite_batch(void) {
+  size_t num_vertices = dynlist_size(sprite_batch_list);
+  if (num_vertices == 0) return;
+
   // update the vbo buffer dynamically
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, num_vertices * sizeof(batch_vertex_t),
-                  vertices);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_sprite_batch);
+  glBufferSubData(GL_ARRAY_BUFFER, 0,
+                  num_vertices * sizeof(batch_sprite_vertex_t),
+                  sprite_batch_list);
 
   ASSERT(texture_slots[0] == white_texture_id,
          "texture slot 0 should be white_texture_id (%d), but is %d",
@@ -88,14 +102,24 @@ static void render_batch(batch_vertex_t* vertices, size_t num_vertices) {
   }
 
   glUseProgram(shader_batch);
-  glBindVertexArray(vao_batch);
+  glBindVertexArray(vao_sprite_batch);
   // the amount of quads we are drawing is count / 4, with six indices per quad
   // so we draw all of the required indices that were set up in the batch init
   glDrawElements(GL_TRIANGLES, (num_vertices >> 2) * 6, GL_UNSIGNED_INT, NULL);
 }
 
-void render_batch_list(void) {
-  render_batch(batch_list, dynlist_size(batch_list));
+void render_aabb_line_batch(void) {
+  size_t num_vertices = dynlist_size(line_batch_list);
+  if (num_vertices == 0) return;
+
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_line_batch);
+  glBufferSubData(GL_ARRAY_BUFFER, 0,
+                  num_vertices * sizeof(batch_line_vertex_t), line_batch_list);
+
+  glUseProgram(shader_line_batch);
+  glBindVertexArray(vao_line_batch);
+  glDrawArrays(GL_LINES, 0, num_vertices);
+  glBindVertexArray(0);
 }
 
 void render_end(void) { glfwSwapBuffers(state.window); }
@@ -121,25 +145,6 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // will draw from the ebo
 
   glBindVertexArray(0);
-}
-
-void render_quad_lines(vec2 pos, vec2 size, vec4 color) {
-  // using the polygon mode (much more performant)
-  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  // render_quad(pos, size, color);
-  // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-  vec2 points[4] = {
-      {pos[0] - size[0] * 0.5, pos[1] - size[1] * 0.5},
-      {pos[0] + size[0] * 0.5, pos[1] - size[1] * 0.5},
-      {pos[0] + size[0] * 0.5, pos[1] + size[1] * 0.5},
-      {pos[0] - size[0] * 0.5, pos[1] + size[1] * 0.5},
-  };
-
-  render_line_segment(points[0], points[1], color);
-  render_line_segment(points[1], points[2], color);
-  render_line_segment(points[2], points[3], color);
-  render_line_segment(points[3], points[0], color);
 }
 
 void render_line_segment(vec2 start, vec2 end, vec4 color) {
@@ -168,6 +173,43 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
   glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind vbo
 }
 
+void render_quad_lines(vec2 pos, vec2 size, vec4 color) {
+  // using the polygon mode (much more performant)
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  // render_quad(pos, size, color);
+  // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+  vec2 top_left = {pos[0] - size[0] * 0.5f, pos[1] - size[1] * 0.5f};
+  vec2 top_right = {pos[0] + size[0] * 0.5f, pos[1] - size[1] * 0.5f};
+  vec2 bottom_right = {pos[0] + size[0] * 0.5f, pos[1] + size[1] * 0.5f};
+  vec2 bottom_left = {pos[0] - size[0] * 0.5f, pos[1] + size[1] * 0.5f};
+
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {top_left[0], top_left[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {top_right[0], top_right[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {top_right[0], top_right[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {bottom_right[0], bottom_right[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {bottom_right[0], bottom_right[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {bottom_left[0], bottom_left[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {bottom_left[0], bottom_left[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+  *dynlist_append(line_batch_list) =
+      (batch_line_vertex_t){.position = {top_left[0], top_left[1]},
+                            .color = {color[0], color[1], color[2], color[3]}};
+}
+
 void render_aabb(f32* aabb, vec4 color) {
   vec2 size;
   vec2_scale(size, &aabb[2], 2); // scale the halfsize by 2
@@ -188,8 +230,8 @@ static void calculate_sprite_tex_coords(vec4 result, f32 row, f32 column,
   result[3] = y + h;
 }
 
-static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color,
-                        u32 texture_slot_index) {
+static void append_texture_quad(vec2 position, vec2 size, vec2 tex_coords,
+                                vec4 color, u32 texture_slot_index) {
   // for batch rendering of the sprite sheet textures/frames
   vec4 tex_data = {0, 0, 1, 1}; // default data
 
@@ -198,7 +240,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color,
   }
   // append the four vertices of the quad into the batch list
   // top left
-  *dynlist_append(batch_list) = (batch_vertex_t){
+  *dynlist_append(sprite_batch_list) = (batch_sprite_vertex_t){
       .position = {position[0], position[1]},
       .tex_coords = {tex_data[0], tex_data[1]},
       .color = {color[0], color[1], color[2], color[3]},
@@ -206,7 +248,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color,
   };
 
   // top right
-  *dynlist_append(batch_list) = (batch_vertex_t){
+  *dynlist_append(sprite_batch_list) = (batch_sprite_vertex_t){
       .position = {position[0] + size[0], position[1]},
       .tex_coords = {tex_data[2], tex_data[1]},
       .color = {color[0], color[1], color[2], color[3]},
@@ -214,7 +256,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color,
   };
 
   // bottom right
-  *dynlist_append(batch_list) = (batch_vertex_t){
+  *dynlist_append(sprite_batch_list) = (batch_sprite_vertex_t){
       .position = {position[0] + size[0], position[1] + size[1]},
       .tex_coords = {tex_data[2], tex_data[3]},
       .color = {color[0], color[1], color[2], color[3]},
@@ -222,7 +264,7 @@ static void append_quad(vec2 position, vec2 size, vec2 tex_coords, vec4 color,
   };
 
   // bottom left
-  *dynlist_append(batch_list) = (batch_vertex_t){
+  *dynlist_append(sprite_batch_list) = (batch_sprite_vertex_t){
       .position = {position[0], position[1] + size[1]},
       .tex_coords = {tex_data[0], tex_data[3]},
       .color = {color[0], color[1], color[2], color[3]},
@@ -273,7 +315,7 @@ void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
 
   i32 texture_slot = set_texture_slot(sprite_sheet->texture_id);
   ASSERT(texture_slot != -1, "need to implement flushing the texture slots");
-  append_quad(bottom_left, size, tex_coords, color, texture_slot);
+  append_texture_quad(bottom_left, size, tex_coords, color, texture_slot);
 }
 
 // for testing triangles

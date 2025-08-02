@@ -163,6 +163,7 @@ void input_handle(body_t* body_player) {
     glfwSetWindowShouldClose(state.window, true);
   }
 
+  if (!body_player) return;
   body_player->velocity[0] = 0;
   if (state.input.right > 0) body_player->velocity[0] += 160;
   if (state.input.left > 0) body_player->velocity[0] -= 160;
@@ -295,9 +296,10 @@ int main(void) {
         TURQUOISE);
 
     // --- end window rendering ---
-    render_batch_list(); // batch render the sprite animations/textures
-    editor_render();     // render the window last
-    render_end();        // glfw swap buffer
+    render_sprite_batch(); // batch render the sprite animations/textures
+    render_aabb_line_batch();
+    editor_render(); // render the window last
+    render_end();    // glfw swap buffer
 
     // reset the Player's AABB color to the non-collision color
     player_aabb_color[0] = 0;
