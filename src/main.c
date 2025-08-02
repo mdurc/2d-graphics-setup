@@ -115,7 +115,7 @@ void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet) {
   // kinematic body
   kin_id = physics_body_create((vec2){render_width * 0.85f, half_h},
                                (vec2){player_size * 2.0f, player_size * 3.0f},
-                               (vec2){-20.f, 0}, 1.0f,
+                               (vec2){-20.f, 0}, NULL,
                                COLLISION_LAYER_KINEMATIC, kinematic_mask, true,
                                kinematic_on_hit, kinematic_on_hit_static);
 
@@ -123,15 +123,15 @@ void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet) {
   vec2 zero_vel = {0, 0};
   e_player_id = entity_create(
       "player", (vec2){half_w - player_size * 3.0f, half_h},
-      (vec2){player_size, player_size}, zero_vel, 1.0f, COLLISION_LAYER_PLAYER,
+      (vec2){player_size, player_size}, zero_vel, NULL, COLLISION_LAYER_PLAYER,
       player_mask, false, (size_t)-1, player_on_hit, player_on_hit_static);
 
   e_a_id = entity_create("enemy one", (vec2){half_w - 50, half_h}, enemy_size,
-                         enemy_vel, 1.0f, COLLISION_LAYER_ENEMY, enemy_mask,
+                         enemy_vel, NULL, COLLISION_LAYER_ENEMY, enemy_mask,
                          false, (size_t)-1, NULL, enemy_on_hit_static);
 
   e_b_id = entity_create("enemy two", (vec2){half_w + 50, half_h}, enemy_size,
-                         enemy_vel, 1.0f, COLLISION_LAYER_ENEMY, enemy_mask,
+                         enemy_vel, NULL, COLLISION_LAYER_ENEMY, enemy_mask,
                          false, (size_t)-1, NULL, enemy_on_hit_static);
 
   // player animations
@@ -156,7 +156,7 @@ void input_handle(body_t* body_player) {
   if (state.input.right > 0) body_player->velocity[0] += 160;
   if (state.input.left > 0) body_player->velocity[0] -= 160;
   if (state.input.up > 0 && player_is_grounded) {
-    body_player->velocity[1] = 1300;
+    body_player->velocity[1] = 250;
     player_is_grounded = false;
   }
 }

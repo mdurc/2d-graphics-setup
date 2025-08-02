@@ -173,9 +173,8 @@ static void render_entity_inspector(void) {
 
       LABELED_DRAG_FLOAT2("Position##ForEntity", body->aabb.position);
       LABELED_DRAG_FLOAT2("Velocity##ForEntity", body->velocity);
+      LABELED_DRAG_FLOAT2("Accel##ForEntity", body->acceleration);
       LABELED_CHECKBOX("Is Kinematic##ForEntity", &body->is_kinematic);
-      LABELED_DRAG_FLOAT("Gravity Scale##ForEntity", &body->gravity_scale,
-                         0.05f, 0.0f, 10.0f);
 
       if (igButton("Delete Entity", (ImVec2){-1, 0})) {
         entity_deactivate(selected_entity_id);
@@ -197,7 +196,6 @@ static const char* get_entity_name_for_body(size_t body_id) {
 
 static void render_physics_inspector(void) {
   if (igCollapsingHeader_TreeNodeFlags("Physics Inspector", NO_FLAGS)) {
-    LABELED_SLIDER_FLOAT("Gravity", physics_get_gravity(), -2000.f, 0.f);
     LABELED_SLIDER_FLOAT("Terminal", physics_get_terminal_velocity(), -7000.f,
                          0.f);
     igText("Body Count: %zu", physics_body_count());
@@ -251,12 +249,11 @@ static void render_physics_inspector(void) {
     igText("Body Properties");
     body_t* body = physics_body_get(selected_body_id);
     LABELED_DRAG_FLOAT2("Position##ForBody", body->aabb.position);
-    LABELED_DRAG_FLOAT2("Size##ForBody", body->aabb.half_size);
     LABELED_DRAG_FLOAT2("Velocity##ForBody", body->velocity);
+    LABELED_DRAG_FLOAT2("Accel##ForBody", body->acceleration);
+    LABELED_DRAG_FLOAT2("Size##ForBody", body->aabb.half_size);
     LABELED_INPUT_U8("Collision Layer##ForBody", &body->collision_layer);
     LABELED_INPUT_U8("Collision Mask##ForBody", &body->collision_mask);
-    LABELED_DRAG_FLOAT("Gravity Scale##ForBody", &body->gravity_scale, 0.05f,
-                       0.f, 10.f);
     LABELED_CHECKBOX("Is Kinematic##ForBody", &body->is_kinematic);
   }
 
@@ -300,7 +297,7 @@ static void render_creation_tools(void) {
     LABELED_CHECKBOX("Is Kinematic##ForCreation", &new_entity_is_kinematic);
     if (igButton("Create Entity", (ImVec2){-1, 0})) {
       entity_create(new_entity_name, new_entity_pos, new_entity_size,
-                    (vec2){0, 0}, 1.0f, 0, 0, new_entity_is_kinematic,
+                    (vec2){0, 0}, NULL, 0, 0, new_entity_is_kinematic,
                     (size_t)-1, NULL, NULL);
       increment_string_number(new_entity_name, sizeof(new_entity_name));
     }

@@ -5,18 +5,19 @@
 #include "../c-lib/math.h"
 #include "../renderer/render.h"
 
-static f32 gravity;
 static f32 terminal_velocity;
 static DYNLIST(body_t) body_list;
 static DYNLIST(static_body_t) static_body_list;
 static u32 iterations = 2; // computation/accurate collisions
 static f32 tick_rate;
 
+#define DEFAULT_ACCEL_X 0
+#define DEFAULT_ACCEL_Y -10
+
 void physics_init(void) {
   body_list = dynlist_create(body_t);
   static_body_list = dynlist_create(static_body_t);
 
-  gravity = -100;
   terminal_velocity = -7000;
   tick_rate = 1.0f / iterations;
   LOG("Physics system initialized");
@@ -32,7 +33,6 @@ void physics_deactivate(size_t idx) {
   physics_body_get(idx)->is_active = false;
 }
 
-f32* physics_get_gravity(void) { return &gravity; }
 f32* physics_get_terminal_velocity(void) { return &terminal_velocity; }
 
 static void update_sweep_result(hit_t* result, aabb_t a, aabb_t b,
@@ -153,8 +153,7 @@ void physics_update(f32 delta_time) {
     // kinematic bodies are normal bodies but do not follow gravity
     if (!body->is_kinematic) {
       body->velocity[0] += body->acceleration[0];
-      body->velocity[1] +=
-          body->acceleration[1] + (gravity * body->gravity_scale);
+      body->velocity[1] += body->acceleration[1];
       if (terminal_velocity > body->velocity[1]) {
         body->velocity[1] = terminal_velocity;
       }
@@ -200,7 +199,7 @@ body_t* physics_body_get(size_t idx) {
 }
 
 size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
-                           f32 gravity_scale, u8 collision_layer,
+                           vec2 acceleration, u8 collision_layer,
                            u8 collision_mask, bool is_kinematic,
                            on_hit_func on_hit,
                            on_hit_static_func on_hit_static) {
@@ -220,6 +219,10 @@ size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
 
   body_t* body = physics_body_get(idx);
 
+  if (acceleration == NULL) {
+    acceleration = (vec2){DEFAULT_ACCEL_X, DEFAULT_ACCEL_Y};
+  }
+
   *body = (body_t){
       .aabb =
           {
@@ -227,7 +230,7 @@ size_t physics_body_create(vec2 position, vec2 size, vec2 velocity,
               .half_size = {size[0] * 0.5f, size[1] * 0.5f},
           },
       .velocity = {velocity[0], velocity[1]},
-      .gravity_scale = gravity_scale,
+      .acceleration = {acceleration[0], acceleration[1]},
       .collision_layer = collision_layer,
       .collision_mask = collision_mask,
       .on_hit = on_hit,
