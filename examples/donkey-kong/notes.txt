@@ -1,0 +1,31 @@
+rendered at 800x800 with 3.0f scale
+background sprite sheet is 224x256 sprites
+rendered at render width * 0.5, height * 0.5
+
+(position) [half size]
+
+static bodies:
+(77 x 9)      [56 x 4] -- large bottom
+(141 x 10)    [8 x 4]  -- first step
+(157 x 11)    [8 x 4]  -- second step (16 pixels right, 1 pixel up)
+(173 x 12)    [8 x 4]
+(189 x 13)    [8 x 4]
+(205 x 14)    [8 x 4]
+(221 x 15)    [8 x 4]
+(237 x 16)    [8 x 4]  -- end of first staircase
+
+(221 x 37)    [8 x 4] -- 22 pixels above from the second to last previous step
+(205 x 38)    [8 x 4]
+(189 x 39)
+(173 x 40)
+(157 x 41)
+(141 x 42)
+(125 x 43)
+(109 x 44)
+(93 x 45)
+(77 x 46)
+(61 x 47)
+(45 x 48)
+(29 x 49)
+
+(45 x 70) -- start of the next staircase

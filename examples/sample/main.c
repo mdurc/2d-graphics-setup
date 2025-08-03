@@ -1,5 +1,5 @@
 #include "engine/animation/animation.h"
-// #include "engine/audio/audio.h"
+#include "engine/audio/audio.h"
 #include "engine/c-lib/misc.h"
 #include "engine/config/config.h"
 #include "engine/editor/editor.h"
@@ -170,14 +170,14 @@ int main(void) {
   physics_init();
   entity_init();
   animation_init();
-  // audio_init();
+  audio_init();
   editor_init(state.window);
 
   // -------- Data Setup --------
   sprite_sheet_t bg_sheet;
-  render_init_sprite_sheet(&bg_sheet, "./res/bg.png", 8, 8);
+  render_init_sprite_sheet(&bg_sheet, "res/sample_bg.png", 8, 8);
   sprite_sheet_t font_sheet;
-  render_init_sprite_sheet(&font_sheet, "./res/font.png", 8, 8);
+  render_init_sprite_sheet(&font_sheet, "res/sample_font.png", 8, 8);
 
   u32 shader_temp, vao_one, vao_two;
   render_test_setup(&shader_temp, &vao_one, 1.0f);
@@ -191,9 +191,9 @@ int main(void) {
       "\n!@#$%^&*()_+="
       "\n,./<>?;':\"[]";
 
-  // music_t* drum_music;
-  // audio_music_load(&drum_music, "res/drum_music.wav");
-  // audio_music_play(drum_music);
+  music_t* drum_music;
+  audio_music_load(&drum_music, "res/sample_music.wav");
+  audio_music_play(drum_music);
 
   // -------- Beginning Game Loop --------
   fv2 render_size = render_get_render_size();
@@ -297,9 +297,9 @@ int main(void) {
   }
 
   // engine system de-initialization
-  // audio_music_destroy(drum_music);
+  audio_music_destroy(drum_music);
   editor_destroy();
-  // audio_destroy();
+  audio_destroy();
   animation_destroy();
   entity_destroy();
   physics_destroy();

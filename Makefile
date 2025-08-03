@@ -1,16 +1,20 @@
 # usage:
-# 	make
-# 	make rebuild
+# 	make GAME=sample
+# 	make GAME=donkey-kong
+#		make rebuild GAME=sample
 # 	make clean
 
 # -- config --
 CC								:= gcc
 CXX								:= g++
-PROGRAM						:= a.out
+GAME							?= sample
+PROGRAM						:= $(GAME)
 
+GAMES_DIR					:= examples
 SRC_DIR						:= src
 BIN_DIR						:= bin
 LIB_DIR						:= lib
+
 ENGINE_DIR				:= $(SRC_DIR)/engine
 ENGINE_HEADER			:= $(ENGINE_DIR)/engine.h
 ENGINE_LIB				:= $(BIN_DIR)/libengine.a
@@ -58,8 +62,11 @@ CFLAGS						:= $(WARNINGS) -g -MMD -MP `pkg-config --cflags glfw3` -DCLIB_TIME_G
 CXXFLAGS					:= -std=c++11 -g -MMD -MP `pkg-config --cflags glfw3` -DCLIB_TIME_GLFW
 
 # -isystem instead of -I to avoid compiler warnings on external libraries
-INCFLAGS					:= $(addprefix -isystem,$(LIB_DIR)) \
-										 -isystem$(CIMGUI_DIR) -isystem$(IMGUI_DIR) -isystem$(CIMGUI_BACKENDS)
+INCFLAGS					:= -I$(SRC_DIR) \
+										 $(addprefix -isystem,$(LIB_DIR)) \
+										 -isystem$(CIMGUI_DIR) \
+										 -isystem$(IMGUI_DIR) \
+										 -isystem$(CIMGUI_BACKENDS)
 
 LDFLAGS						:= `pkg-config --libs glfw3` -lm
 ifeq ($(UNAME_S),Darwin)
@@ -69,7 +76,7 @@ else
 endif
 
 ifeq ($(CIMGUI_FREETYPE),1)
-	CIMGUI_SRC_FILES += $(IMGUI_DIR)/misc/freetype/imgui_freetype.cpp
+	CIMGUI_SRC_FILES+= $(IMGUI_DIR)/misc/freetype/imgui_freetype.cpp
 	DEFINES 				+= -DIMGUI_ENABLE_FREETYPE -DIMGUI_ENABLE_STB_TRUETYPE=1
 	LDFLAGS 				+= `pkg-config --libs freetype2`
 endif
@@ -77,19 +84,22 @@ endif
 ENGINE_SRC_FILES	:= $(shell find $(ENGINE_DIR) -name '*.c')
 ENGINE_OBJ_FILES	:= $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/%.o,$(ENGINE_SRC_FILES))
 
-SRC_FILES					:= $(wildcard $(SRC_DIR)/*.c) \
-										 lib/glad.c
-OBJ_FILES					:= $(patsubst $(LIB_DIR)/%.c,$(BIN_DIR)/%.o, \
-										 $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/%.o,$(SRC_FILES)))
+GAME_SRC_FILES		:= $(wildcard $(GAMES_DIR)/$(GAME)/*.c)
+GAME_OBJ_FILES		:= $(patsubst $(GAMES_DIR)/%.c,$(BIN_DIR)/%.o,$(GAME_SRC_FILES))
+
+COMMON_SRC_FILES	:= lib/glad.c
+COMMON_OBJ_FILES	:= $(patsubst $(LIB_DIR)/%.c,$(BIN_DIR)/%.o,$(COMMON_SRC_FILES))
+
 CIMGUI_OBJ_FILES	:= $(patsubst %.cpp,$(BIN_DIR)/%.o,$(CIMGUI_SRC_FILES))
-DEP_FILES					:= $(patsubst %.o,%.d,$(OBJ_FILES) $(CIMGUI_OBJ_FILES))
+DEP_FILES					:= $(patsubst %.o,%.d,$(GAME_OBJ_FILES) $(COMMON_OBJ_FILES) $(ENGINE_OBJ_FILES) $(CIMGUI_OBJ_FILES))
 
 # -- rules --
 all: $(PROGRAM)
 
 # link final program with c++ compiler due to using cimgui now
-$(PROGRAM): $(OBJ_FILES) $(CIMGUI_LIB) $(ENGINE_LIB)
-	$(CXX) $(OBJ_FILES) -o $@ $(CIMGUI_LIB) $(ENGINE_LIB) $(LDFLAGS)
+$(PROGRAM): $(GAME_OBJ_FILES) $(COMMON_OBJ_FILES) $(CIMGUI_LIB) $(ENGINE_LIB)
+	@mkdir -p $(dir $@)
+	$(CXX) $^ -o $@ $(LDFLAGS)
 
 # create/maintain the library archive for the static cimgui library
 $(CIMGUI_LIB): $(CIMGUI_OBJ_FILES)
@@ -98,8 +108,13 @@ $(CIMGUI_LIB): $(CIMGUI_OBJ_FILES)
 $(ENGINE_LIB): $(ENGINE_OBJ_FILES)
 	ar rcs $@ $^
 
-# project C source files
-$(BIN_DIR)/%.o: $(SRC_DIR)/%.c
+# project/game C source files
+$(BIN_DIR)/%.o: $(GAMES_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCFLAGS) $(DEFINES) -c $< -o $@
+
+# engine C source files
+$(BIN_DIR)/engine/%.o: $(SRC_DIR)/engine/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCFLAGS) $(DEFINES) -c $< -o $@
 
@@ -114,24 +129,11 @@ $(BIN_DIR)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(INCFLAGS) $(DEFINES) -c $< -o $@
 
 clean:
-	rm -rf $(BIN_DIR) $(PROGRAM)
+	rm -rf $(BIN_DIR)
+	rm -f $(PROGRAM)
 
 rebuild: clean all
 
-# --- Installation ---
-PREFIX?=/usr/local
-INSTALL_LIB_DIR = $(PREFIX)/lib
-INSTALL_INCLUDE_DIR = $(PREFIX)/include
-
-install: $(ENGINE_LIB)
-	sudo mkdir -p $(INSTALL_LIB_DIR)
-	sudo mkdir -p $(INSTALL_INCLUDE_DIR)
-	sudo cp $(ENGINE_HEADER) $(INSTALL_INCLUDE_DIR)
-	sudo cp $(ENGINE_LIB) $(INSTALL_LIB_DIR)
-
-uninstall:
-	sudo rm -f $(INSTALL_INCLUDE_DIR)/engine.h $(INSTALL_LIB_DIR)/libengine.a
-
 -include $(DEP_FILES)
 
-.PHONY: all clean rebuild install uninstall
+.PHONY: all clean rebuild

@@ -14,10 +14,11 @@ features:
 - Very basic audio capabilities
 
 some directories:
-- game/: this is where the game specific game loop and implementation would go, with all of the entity creation, etc.
+- examples/: these are sample games and examples of how this system can be used
 - c-lib/: utility libraries (dynamic list, logging, etc.)
 - shaders/: GLSL shader files
-- lib/: external libraries (GLAD, linmath)
+- lib/: external libraries (GLAD, linmath, miniaudio)
 - res/: game assets (sprite sheets)
 
 `make` to build
+`make GAME=dir` for specific game src files within `examples/dir`
