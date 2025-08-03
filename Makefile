@@ -8,7 +8,7 @@
 CC								:= gcc
 CXX								:= g++
 GAME							?= sample
-PROGRAM						:= $(GAME)
+PROGRAM						:= $(GAME).out
 
 GAMES_DIR					:= examples
 SRC_DIR						:= src
