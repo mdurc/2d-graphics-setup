@@ -25,7 +25,7 @@ typedef struct {
 #define MAX_BATCH_VERTICES 4 * MAX_BATCH_QUADS // four common vertices per quad, for ebo
 #define MAX_BATCH_ELEMENTS 6 * MAX_BATCH_QUADS // one for each corner of the two triangles
 
-void render_init(u32 width, u32 height, f32 scale);
+void render_init(u32 width, u32 height, f32 scale, vec4 bg_color);
 void render_destroy(void);
 void render_begin(void);
 void render_end(void);

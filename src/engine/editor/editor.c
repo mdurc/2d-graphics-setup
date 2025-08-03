@@ -53,7 +53,7 @@ static ImGuiIO* ioptr; // main ImGui IO object
 static int selected_entity_id = -1;
 static int selected_body_id = -1;
 static int selected_static_body_id = -1;
-static bool is_debug_mode = true;
+static bool is_debug_mode = false;
 static bool is_visible = false;
 
 // -- new entity/body creation state --

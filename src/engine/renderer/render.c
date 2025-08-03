@@ -14,6 +14,7 @@
 
 static f32 render_width, render_height;
 static f32 render_scale;
+static vec4 background_color;
 
 // used for the batch rendering of textures
 // (index zero is reserved for the default WHITE white_texture_id)
@@ -30,11 +31,14 @@ static u32 vao_line_batch, vbo_line_batch;
 static DYNLIST(batch_sprite_vertex_t) sprite_batch_list;
 static DYNLIST(batch_line_vertex_t) line_batch_list;
 
-void render_init(u32 width, u32 height, f32 scale) {
+void render_init(u32 width, u32 height, f32 scale, vec4 bg_color) {
   render_init_window(width, height);
   render_scale = scale;
   render_width = width / scale;
   render_height = height / scale;
+
+  if (bg_color == NULL) bg_color = (vec4){0.2f, 0.3f, 0.3f, 1.0f};
+  for (u32 i = 0; i < 4; ++i) background_color[i] = bg_color[i];
 
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
   render_init_line(&vao_line, &vbo_line);
@@ -67,7 +71,8 @@ void render_destroy(void) {
 }
 
 void render_begin(void) {
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(background_color[0], background_color[1], background_color[2],
+               background_color[3]);
   glClear(GL_COLOR_BUFFER_BIT);
   dynlist_clear(sprite_batch_list); // clear the list each frame
   dynlist_clear(line_batch_list);

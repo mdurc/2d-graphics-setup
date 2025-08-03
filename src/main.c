@@ -166,7 +166,7 @@ int main(void) {
   // engine system initialization
   time_init(60);
   config_init();
-  render_init(1280, 720, 3.0f);
+  render_init(1280, 720, 3.0f, (vec4){0, 0, 0, 1});
   physics_init();
   entity_init();
   animation_init();
