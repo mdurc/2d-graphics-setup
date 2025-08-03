@@ -10,8 +10,12 @@
 #define dot(v0, v1) ({ const fv2 _v0 = (v0), _v1 = (v1); (_v0.x * _v1.x) + (_v0.y * _v1.y); })
 #define length(v) ({ const fv2 _v = (v); sqrtf(dot(_v, _v)); })
 #define normalize(u) ({ const fv2 _u = (u); const f32 _l = length(_u); (fv2) { _u.x / _l, _u.y / _l }; })
+#define sign(_a) ({ \
+        __typeof__(_a) __a = (_a); \
+        (__typeof__(_a))(__a < 0 ? -1 : (__a > 0 ? 1 : 0)); \
+    })
 
-#define FLOAT_EPSILON 1e-6f
+#define FLOAT_EPSILON 1e-10f
 #define float_eq(a, b) (fabsf((a) - (b)) < FLOAT_EPSILON)
 
 #endif
