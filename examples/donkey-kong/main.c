@@ -1,10 +1,8 @@
 #include "engine/animation/animation.h"
-#include "engine/c-lib/math.h"
 #include "engine/c-lib/misc.h"
 #include "engine/config/config.h"
 #include "engine/editor/editor.h"
 #include "engine/entity/entity.h"
-#include "engine/font/font.h"
 #include "engine/physics/physics.h"
 #include "engine/renderer/render.h"
 #include "engine/renderer/render_init.h"
@@ -70,13 +68,15 @@ static bool advance_frame = false;
 
 // -------- collision response callbacks --------
 void ladder_on_hit(body_t* self, body_t* other, hit_t hit) {
+  (void)hit;
   if (other->collision_layer != COLLISION_LAYER_MARIO) {
     return;
   }
 
   if (mario_is_overlapping_ladder && !mario_is_on_ladder && mario_is_grounded) {
     // check to ENTER ladder mode
-    if (state.input.up > 0 || state.input.down > 0) {
+    if (state.input.states[INPUT_KEY_UP] > 0 ||
+        state.input.states[INPUT_KEY_DOWN] > 0) {
       mario_is_on_ladder = true;
       mario_is_grounded = false;
       other->is_kinematic = true;
@@ -104,15 +104,16 @@ void ladder_on_hit(body_t* self, body_t* other, hit_t hit) {
     other->velocity[0] = 0;
     other->velocity[1] = 0;
 
-    if (at_the_edge && (state.input.left || state.input.right)) {
+    if (at_the_edge && (state.input.states[INPUT_KEY_LEFT] ||
+                        state.input.states[INPUT_KEY_RIGHT])) {
       mario_is_on_ladder = false;
       other->is_kinematic = false;
       other->collision_mask = mario_mask;
       mario_is_grounded = false;
       return;
     }
-    if (state.input.up > 0) other->velocity[1] = 45;
-    if (state.input.down > 0) other->velocity[1] = -45;
+    if (state.input.states[INPUT_KEY_UP] > 0) other->velocity[1] = 45;
+    if (state.input.states[INPUT_KEY_DOWN] > 0) other->velocity[1] = -45;
   }
 }
 void ladder_on_hit_static(body_t* self, static_body_t* other, hit_t hit) {
@@ -224,21 +225,22 @@ void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet,
 
 // -------- input handler for the engine input system --------
 void input_handle(body_t* body) {
-  if (state.input.escape > 0) {
+  if (state.input.states[INPUT_KEY_ESCAPE] > 0) {
     glfwSetWindowShouldClose(state.window, true);
   }
   if (!body || mario_is_on_ladder) return;
 
   body->velocity[0] = 0;
-  if (state.input.right > 0) {
+  if (state.input.states[INPUT_KEY_RIGHT] > 0) {
     mario_move_dir = 1;
-    body->velocity[0] += 50;
+    body->velocity[0] += 80;
   }
-  if (state.input.left > 0) {
+  if (state.input.states[INPUT_KEY_LEFT] > 0) {
     mario_move_dir = -1;
     body->velocity[0] -= 80;
   }
-  if (state.input.up > 0 && mario_is_grounded && !mario_is_overlapping_ladder) {
+  if (state.input.states[INPUT_KEY_UP] > 0 && mario_is_grounded &&
+      !mario_is_overlapping_ladder) {
     body->velocity[1] = 90;
     mario_is_grounded = false;
   }
@@ -249,7 +251,7 @@ int main(void) {
   // engine system initialization
   time_init(60);
   config_init();
-  render_init(800, 800, 3.0f, NULL);
+  render_init(800, 800, 3.0f, BLACK);
   physics_init();
   entity_init();
   animation_init();
@@ -281,8 +283,9 @@ int main(void) {
     time_update();
     input_update();
 
-    if (state.input.debug == KS_PRESSED) is_paused = !is_paused;
-    if (state.input.editor_toggle == KS_PRESSED) {
+    if (state.input.states[INPUT_KEY_DEBUG] == KS_PRESSED)
+      is_paused = !is_paused;
+    if (state.input.states[INPUT_KEY_EDITOR_TOGGLE] == KS_PRESSED) {
       editor_toggle_visibility();
       bool is_visible = editor_is_visible();
       glfwSetInputMode(state.window, GLFW_CURSOR,
@@ -291,9 +294,10 @@ int main(void) {
     editor_update(); // after debug keybind so that editor takes priority
 
     advance_frame = false;
-    if (is_paused &&
-        (state.input.left == KS_PRESSED || state.input.right == KS_PRESSED ||
-         state.input.up == KS_PRESSED || state.input.down == KS_PRESSED)) {
+    if (is_paused && (state.input.states[INPUT_KEY_LEFT] == KS_PRESSED ||
+                      state.input.states[INPUT_KEY_RIGHT] == KS_PRESSED ||
+                      state.input.states[INPUT_KEY_UP] == KS_PRESSED ||
+                      state.input.states[INPUT_KEY_DOWN] == KS_PRESSED)) {
       advance_frame = true;
     }
 

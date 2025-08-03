@@ -147,15 +147,15 @@ void setup_bodies_entities_anims(sprite_sheet_t* bg_sheet) {
 
 // -------- input handler for the engine input system --------
 void input_handle(body_t* body_player) {
-  if (state.input.escape > 0) {
+  if (state.input.states[INPUT_KEY_ESCAPE] > 0) {
     glfwSetWindowShouldClose(state.window, true);
   }
 
   if (!body_player) return;
   body_player->velocity[0] = 0;
-  if (state.input.right > 0) body_player->velocity[0] += 160;
-  if (state.input.left > 0) body_player->velocity[0] -= 160;
-  if (state.input.up > 0 && player_is_grounded) {
+  if (state.input.states[INPUT_KEY_RIGHT] > 0) body_player->velocity[0] += 160;
+  if (state.input.states[INPUT_KEY_LEFT] > 0) body_player->velocity[0] -= 160;
+  if (state.input.states[INPUT_KEY_UP] > 0 && player_is_grounded) {
     body_player->velocity[1] = 250;
     player_is_grounded = false;
   }
@@ -211,8 +211,9 @@ int main(void) {
     time_update();
     input_update();
 
-    if (state.input.debug == KS_PRESSED) is_paused = !is_paused;
-    if (state.input.editor_toggle == KS_PRESSED) {
+    if (state.input.states[INPUT_KEY_DEBUG] == KS_PRESSED)
+      is_paused = !is_paused;
+    if (state.input.states[INPUT_KEY_EDITOR_TOGGLE] == KS_PRESSED) {
       editor_toggle_visibility();
       bool is_visible = editor_is_visible();
       glfwSetInputMode(state.window, GLFW_CURSOR,
@@ -221,9 +222,10 @@ int main(void) {
     editor_update(); // after debug keybind so that editor takes priority
 
     advance_frame = false;
-    if (is_paused &&
-        (state.input.left == KS_PRESSED || state.input.right == KS_PRESSED ||
-         state.input.up == KS_PRESSED || state.input.down == KS_PRESSED)) {
+    if (is_paused && (state.input.states[INPUT_KEY_LEFT] == KS_PRESSED ||
+                      state.input.states[INPUT_KEY_RIGHT] == KS_PRESSED ||
+                      state.input.states[INPUT_KEY_UP] == KS_PRESSED ||
+                      state.input.states[INPUT_KEY_DOWN] == KS_PRESSED)) {
       advance_frame = true;
     }
 
