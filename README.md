@@ -1,4 +1,7 @@
 2d (and 3d) graphics blueprint
+
+![demo](res/gifs/demo_video.gif)
+
 - I wanted to make a 2d pixel art game, and then wanted to make an engine, and decided that just having a well organized blueprint that is expanded upon, on a per game basis, is easier and seems a little more manageable/worthwhile.
 - After finishing the 2d pixel art focused system, I wanted to explore 3d rendering. I made another repo that was simply exploring how the different matrix operations work in a 3d space, and it seemed like it could be added to this, even though the 3d aspect is somewhat out of the scope/focus of the initial blueprint goals.
 
@@ -26,6 +29,3 @@ some directories:
 
 `make` to build
 `make GAME=dir` for specific game src files within `examples/dir`
-
-demo video:
-![demo](res/gifs/demo_video.gif)
