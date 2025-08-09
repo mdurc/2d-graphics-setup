@@ -54,32 +54,45 @@ void render_init_window(u32 width, u32 height) {
   printf("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 }
 
-static u32 render_create_shader(const char* path_vert, const char* path_frag) {
+void render_init_color_texture(u32* texture) {
+  // this will be the blank texture so that whatever color we wish to draw to
+  // the object, it will be that color only
+  glGenTextures(1, texture);
+  glBindTexture(GL_TEXTURE_2D, *texture);
+
+  u8 solid_white[4] = {255, 255, 255, 255};
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               solid_white);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static u32 compile_shader(const char* shader_src, u32 shader_type) {
   int success;
   char log[512];
 
+  u32 shader = glCreateShader(shader_type);
+  glShaderSource(shader, 1, &shader_src, NULL);
+  glCompileShader(shader);
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader, 512, NULL, log);
+    ERROR_EXIT("error compiling shader. %s\n", log);
+  }
+  return shader;
+}
+
+static u32 create_shader_program(const char* path_vert, const char* path_frag) {
   file_t file_vert = io_file_read(path_vert);
   ASSERT(file_vert.is_valid, "error reading vertex shader file\n");
-  u32 shader_vertex = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(shader_vertex, 1, (const char* const*)&file_vert.data, NULL);
-  glCompileShader(shader_vertex);
-  glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader_vertex, 512, NULL, log);
-    ERROR_EXIT("error compiling vertex shader. %s\n", log);
-  }
-
   file_t file_frag = io_file_read(path_frag);
   ASSERT(file_frag.is_valid, "error reading fragment shader file\n");
-  u32 shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(shader_fragment, 1, (const char* const*)&file_frag.data, NULL);
-  glCompileShader(shader_fragment);
-  glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader_fragment, 512, NULL, log);
-    ERROR_EXIT("error compiling fragment shader. %s\n", log);
-  }
 
+  u32 shader_vertex = compile_shader(file_vert.data, GL_VERTEX_SHADER);
+  u32 shader_fragment = compile_shader(file_frag.data, GL_FRAGMENT_SHADER);
+
+  int success;
+  char log[512];
   u32 shader_program = glCreateProgram();
   glAttachShader(shader_program, shader_vertex);
   glAttachShader(shader_program, shader_fragment);
@@ -100,59 +113,53 @@ static u32 render_create_shader(const char* path_vert, const char* path_frag) {
   return shader_program;
 }
 
-void render_init_shaders(u32* shader_program, u32* shader_sprite_batch,
-                         u32* shader_line_batch, f32 render_width,
-                         f32 render_height) {
-  mat4x4 projection;
-  *shader_program = render_create_shader("./src/engine/shaders/default.vert",
-                                         "./src/engine/shaders/default.frag");
-  *shader_sprite_batch =
-      render_create_shader("./src/engine/shaders/texture_batch.vert",
-                           "./src/engine/shaders/texture_batch.frag");
-  *shader_line_batch =
-      render_create_shader("./src/engine/shaders/line_batch.vert",
-                           "./src/engine/shaders/line_batch.frag");
+void render_init_shaders(u32* out_shader_2d, u32* out_shader_2d_sprite_batch,
+                         u32* out_shader_2d_line_batch, u32* out_shader_3d,
+                         f32 render_width, f32 render_height) {
+#define PREFIX "./src/engine/shaders/"
+#define PROG(fname) create_shader_program(PREFIX #fname ".vert", PREFIX #fname ".frag")
+  *out_shader_2d = PROG(default);
+  *out_shader_2d_sprite_batch = PROG(texture_batch);
+  *out_shader_2d_line_batch = PROG(line_batch);
+  *out_shader_3d = PROG(3d);
+#undef PROG
+#undef PREFIX
 
   // orthographic camera view to get the pixel size we want, and applying the
   // projection to the entire window.
-  mat4x4_ortho(projection, 0, render_width, 0, render_height, -2, 2);
+  mat4x4 projection_2d;
+  mat4x4_ortho(projection_2d, 0, render_width, 0, render_height, -2, 2);
 
-  glUseProgram(*shader_program);
-  glUniformMatrix4fv(glGetUniformLocation(*shader_program, "projection"), 1,
-                     GL_FALSE, &projection[0][0]);
+  glUseProgram(*out_shader_2d);
+  glUniformMatrix4fv(glGetUniformLocation(*out_shader_2d, "projection"), 1,
+                     GL_FALSE, &projection_2d[0][0]);
 
-  glUseProgram(*shader_line_batch);
-  glUniformMatrix4fv(glGetUniformLocation(*shader_line_batch, "projection"), 1,
-                     GL_FALSE, &projection[0][0]);
+  glUseProgram(*out_shader_2d_line_batch);
+  glUniformMatrix4fv(
+      glGetUniformLocation(*out_shader_2d_line_batch, "projection"), 1,
+      GL_FALSE, &projection_2d[0][0]);
 
-  glUseProgram(*shader_sprite_batch);
-  glUniformMatrix4fv(glGetUniformLocation(*shader_sprite_batch, "projection"),
-                     1, GL_FALSE, &projection[0][0]);
-
+  glUseProgram(*out_shader_2d_sprite_batch);
+  glUniformMatrix4fv(
+      glGetUniformLocation(*out_shader_2d_sprite_batch, "projection"), 1,
+      GL_FALSE, &projection_2d[0][0]);
   // the texture slot represents what texture is used for the active texture
   // (ie, GL_TEXTURE0, GL_TEXTURE1, etc).
   int slots[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  glUniform1iv(glGetUniformLocation(*shader_sprite_batch, "texture_slots"), 8,
-               slots);
+  glUniform1iv(
+      glGetUniformLocation(*out_shader_2d_sprite_batch, "texture_slots"), 8,
+      slots);
   /*
   Each batch vertex will have a texture slot index. The slot index maps to the
   texture id in the engine. When we go to render the batch, we then link the
   texture slot in the fragment shader (GL_TEXTURE0, GL_TEXTURE1) to the
   corresponding texture ids that we have per slot in the engine.
   */
-}
 
-void render_init_color_texture(u32* texture) {
-  // this will be the blank texture so that whatever color we wish to draw to
-  // the object, it will be that color only
-  glGenTextures(1, texture);
-  glBindTexture(GL_TEXTURE_2D, *texture);
-
-  u8 solid_white[4] = {255, 255, 255, 255};
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-               solid_white);
-
-  glBindTexture(GL_TEXTURE_2D, 0);
+  // the projection and view matrices for the 3D shader are set per-frame in
+  // render_begin_3d by the client, we only need to set the texture uniform
+  glUseProgram(*out_shader_3d);
+  glUniform1i(glGetUniformLocation(*out_shader_3d, "texture_id"), 0);
 }
 
 void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
@@ -202,6 +209,23 @@ void render_init_quad(u32* vao, u32* vbo, u32* ebo) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // unbind ebo
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // for wireframe mode
+}
+
+void render_init_line(u32* vao, u32* vbo) {
+  glGenVertexArrays(1, vao);
+  glGenBuffers(1, vbo);
+
+  glBindVertexArray(*vao);
+  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
+  // specifying the size, but not providing any data yet, as it will be updating
+  glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(f32), NULL, GL_DYNAMIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
+  glEnableVertexAttribArray(0);
+  // we do not need to add the uv texture coordinate attribute
+
+  glBindVertexArray(0);             // unbind the vao
+  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo
 }
 
 void render_init_batch_texture_quads(u32* vao, u32* vbo, u32* ebo) {
@@ -282,23 +306,6 @@ void render_init_batch_lines(u32* vao, u32* vbo) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void render_init_line(u32* vao, u32* vbo) {
-  glGenVertexArrays(1, vao);
-  glGenBuffers(1, vbo);
-
-  glBindVertexArray(*vao);
-  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-  // specifying the size, but not providing any data yet, as it will be updating
-  glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(f32), NULL, GL_DYNAMIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(f32), (void*)0);
-  glEnableVertexAttribArray(0);
-  // we do not need to add the uv texture coordinate attribute
-
-  glBindVertexArray(0);             // unbind the vao
-  glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind the vbo
-}
-
 void render_init_sprite_sheet(sprite_sheet_t* sprite_sheet, const char* path,
                               f32 cell_width, f32 cell_height) {
   glGenTextures(1, &sprite_sheet->texture_id);
@@ -323,4 +330,70 @@ void render_init_sprite_sheet(sprite_sheet_t* sprite_sheet, const char* path,
   sprite_sheet->height = (f32)height;
   sprite_sheet->cell_width = cell_width;
   sprite_sheet->cell_height = cell_height;
+}
+
+void render_init_cube(u32* vao, u32* vbo, u32* ebo) {
+  f32 vertices[] = {
+      // positions     texture coords     colors (r, g, b)
+      // back face (red)
+      -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, -0.5f, -0.5f,
+      1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f,
+      0.0f, -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+      // front face (green)
+      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, -0.5f, 0.5f, 1.0f,
+      0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+      -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+      // left face (blue)
+      -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.5f, 0.5f, -0.5f, 1.0f,
+      1.0f, 0.0f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+      // right face (yellow)
+      0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.5f, 0.5f, -0.5f, 1.0f,
+      1.0f, 1.0f, 1.0f, 0.0f, 0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+      0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+      // bottom face (magenta)
+      -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f, -0.5f, -0.5f,
+      1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 0.0f,
+      1.0f, -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+      // top face (cyan)
+      -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.5f, -0.5f, 1.0f,
+      1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+      -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f};
+
+  u32 idxs[] = {
+      0,  1,  2,  2,  3,  0,  // back face
+      4,  5,  6,  6,  7,  4,  // front face
+      8,  9,  10, 10, 11, 8,  // left face
+      12, 13, 14, 14, 15, 12, // right face
+      16, 17, 18, 18, 19, 16, // bottom face
+      20, 21, 22, 22, 23, 20  // top face
+  };
+
+  glGenVertexArrays(1, vao);
+  glGenBuffers(1, vbo);
+  glGenBuffers(1, ebo);
+
+  glBindVertexArray(*vao);
+  glBindBuffer(GL_ARRAY_BUFFER, *vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idxs), idxs, GL_STATIC_DRAW);
+
+  size_t stride = 8 * sizeof(f32);
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+  glEnableVertexAttribArray(0);
+  // uv attribute
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride,
+                        (void*)(3 * sizeof(f32)));
+  glEnableVertexAttribArray(1);
+  // color attribute
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride,
+                        (void*)(5 * sizeof(f32)));
+  glEnableVertexAttribArray(2);
+
+  glBindVertexArray(0);                     // unbind vao
+  glBindBuffer(GL_ARRAY_BUFFER, 0);         // unbind vbo
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // unbind ebo
 }

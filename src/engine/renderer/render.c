@@ -16,20 +16,21 @@ static f32 render_width, render_height;
 static f32 render_scale;
 static vec4 background_color;
 
-// used for the batch rendering of textures
-// (index zero is reserved for the default WHITE white_texture_id)
-static u32 texture_slots[8] = {0};
-static u32 white_texture_id;
+// ---- 2d rendering state ----
+static u32 texture_slots[8] = {0}; // index zero reserved for default WHITE
+static u32 white_texture_id;       // index zero of texture_slots
 
-static u32 shader_default, shader_batch, shader_line_batch;
+static u32 shader_2d_default, shader_2d_sprite_batch, shader_2d_line_batch;
 static u32 vao_quad, vbo_quad, ebo_quad;
-static u32 vao_line, vbo_line;
-
 static u32 vao_sprite_batch, vbo_sprite_batch, ebo_sprite_batch;
+static u32 vao_line, vbo_line;
 static u32 vao_line_batch, vbo_line_batch;
-
 static DYNLIST(batch_sprite_vertex_t) sprite_batch_list;
 static DYNLIST(batch_line_vertex_t) line_batch_list;
+
+// ---- 3d rendering state ----
+static u32 shader_3d;
+static u32 vao_cube, vbo_cube, ebo_cube;
 
 void render_init(u32 width, u32 height, f32 scale, vec4 bg_color) {
   render_init_window(width, height);
@@ -40,17 +41,22 @@ void render_init(u32 width, u32 height, f32 scale, vec4 bg_color) {
   if (bg_color == NULL) bg_color = (vec4){0.2f, 0.3f, 0.3f, 1.0f};
   for (u32 i = 0; i < 4; ++i) background_color[i] = bg_color[i];
 
+  // ---- initialize 2d components ----
   render_init_quad(&vao_quad, &vbo_quad, &ebo_quad);
   render_init_line(&vao_line, &vbo_line);
   render_init_color_texture(&texture_slots[0]);
   white_texture_id = texture_slots[0];
-
   render_init_batch_lines(&vao_line_batch, &vbo_line_batch);
   render_init_batch_texture_quads(&vao_sprite_batch, &vbo_sprite_batch,
                                   &ebo_sprite_batch);
 
-  render_init_shaders(&shader_default, &shader_batch, &shader_line_batch,
-                      render_width, render_height);
+  // ---- initialize 3d components ----
+  render_init_cube(&vao_cube, &vbo_cube, &ebo_cube);
+
+  // ---- initialize all shaders ----
+  render_init_shaders(&shader_2d_default, &shader_2d_sprite_batch,
+                      &shader_2d_line_batch, &shader_3d, render_width,
+                      render_height);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -66,20 +72,29 @@ void render_init(u32 width, u32 height, f32 scale, vec4 bg_color) {
 void render_destroy(void) {
   dynlist_destroy(sprite_batch_list);
   dynlist_destroy(line_batch_list);
+  // TODO destroy all opengl data
   glfwTerminate();
   LOG("Renderer system deinitialized");
 }
 
+f32 render_get_render_scale(void) { return render_scale; }
+fv2 render_get_render_size(void) { return (fv2){render_width, render_height}; }
+
 void render_begin(void) {
   glClearColor(background_color[0], background_color[1], background_color[2],
                background_color[3]);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   dynlist_clear(sprite_batch_list); // clear the list each frame
   dynlist_clear(line_batch_list);
 }
 
-f32 render_get_render_scale(void) { return render_scale; }
-fv2 render_get_render_size(void) { return (fv2){render_width, render_height}; }
+void render_end(void) { glfwSwapBuffers(state.window); }
+
+void render_begin_2d(void) {
+  // 2d shaders should already have the orthographic projection matrix set from
+  // init, and the specific shaders are used within the individual render funcs.
+  glDisable(GL_DEPTH_TEST);
+}
 
 void render_sprite_batch(void) {
   size_t num_vertices = dynlist_size(sprite_batch_list);
@@ -106,7 +121,7 @@ void render_sprite_batch(void) {
     glBindTexture(GL_TEXTURE_2D, id == 0 ? white_texture_id : id);
   }
 
-  glUseProgram(shader_batch);
+  glUseProgram(shader_2d_sprite_batch);
   glBindVertexArray(vao_sprite_batch);
   // the amount of quads we are drawing is count / 4, with six indices per quad
   // so we draw all of the required indices that were set up in the batch init
@@ -121,25 +136,23 @@ void render_aabb_line_batch(void) {
   glBufferSubData(GL_ARRAY_BUFFER, 0,
                   num_vertices * sizeof(batch_line_vertex_t), line_batch_list);
 
-  glUseProgram(shader_line_batch);
+  glUseProgram(shader_2d_line_batch);
   glBindVertexArray(vao_line_batch);
   glDrawArrays(GL_LINES, 0, num_vertices);
   glBindVertexArray(0);
 }
 
-void render_end(void) { glfwSwapBuffers(state.window); }
-
 void render_quad(vec2 pos, vec2 size, vec4 color) {
-  glUseProgram(shader_default);
+  glUseProgram(shader_2d_default);
 
   mat4x4 model;
   mat4x4_identity(model);
   mat4x4_translate(model, pos[0], pos[1], 0);
   mat4x4_scale_aniso(model, model, size[0], size[1], 1);
 
-  glUniformMatrix4fv(glGetUniformLocation(shader_default, "model"), 1, GL_FALSE,
-                     &model[0][0]);
-  glUniform4fv(glGetUniformLocation(shader_default, "color"), 1, color);
+  glUniformMatrix4fv(glGetUniformLocation(shader_2d_default, "model"), 1,
+                     GL_FALSE, &model[0][0]);
+  glUniform4fv(glGetUniformLocation(shader_2d_default, "color"), 1, color);
 
   // the vao stores all of the vbo's linked to it
   // the vao also stores the glBindBuffer calls when the target is
@@ -153,7 +166,7 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
 }
 
 void render_line_segment(vec2 start, vec2 end, vec4 color) {
-  glUseProgram(shader_default);
+  glUseProgram(shader_2d_default);
 
   // normalize the start to end
   f32 x = end[0] - start[0];
@@ -163,9 +176,9 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
   mat4x4 model;
   mat4x4_identity(model);
   mat4x4_translate(model, start[0], start[1], 0);
-  glUniformMatrix4fv(glGetUniformLocation(shader_default, "model"), 1, GL_FALSE,
-                     &model[0][0]);
-  glUniform4fv(glGetUniformLocation(shader_default, "color"), 1, color);
+  glUniformMatrix4fv(glGetUniformLocation(shader_2d_default, "model"), 1,
+                     GL_FALSE, &model[0][0]);
+  glUniform4fv(glGetUniformLocation(shader_2d_default, "color"), 1, color);
 
   glBindTexture(GL_TEXTURE_2D, white_texture_id);
   glBindVertexArray(vao_line);
@@ -321,6 +334,42 @@ void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
   i32 texture_slot = set_texture_slot(sprite_sheet->texture_id);
   ASSERT(texture_slot != -1, "need to implement flushing the texture slots");
   append_texture_quad(bottom_left, size, tex_coords, color, texture_slot);
+}
+
+void render_begin_3d(camera_t* camera) {
+  glEnable(GL_DEPTH_TEST);
+
+  mat4x4 projection, view;
+  // create projection matrix
+  mat4x4_perspective(projection, camera->fov_radians, camera->aspect_ratio,
+                     camera->near_plane, camera->far_plane);
+
+  // create view matrix
+  vec3 center;
+  vec3_add(center, camera->position, camera->direction);
+  mat4x4_look_at(view, camera->position, center, camera->up);
+
+  // set uniforms
+  glUseProgram(shader_3d);
+  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "projection"), 1, GL_FALSE,
+                     &projection[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "view"), 1, GL_FALSE,
+                     &view[0][0]);
+}
+
+void render_cube(mat4x4 model) {
+  glUseProgram(shader_3d);
+
+  // solid color rendering
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, white_texture_id);
+
+  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "model"), 1, GL_FALSE,
+                     &model[0][0]);
+
+  glBindVertexArray(vao_cube);
+  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
+  glBindVertexArray(0);
 }
 
 // for testing triangles

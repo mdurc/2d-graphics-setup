@@ -1,13 +1,13 @@
 # usage:
-# 	make GAME=sample
+# 	make GAME=2d-sample
 # 	make GAME=donkey-kong
-#		make rebuild GAME=sample
+#		make rebuild GAME=2d-sample
 # 	make clean
 
 # -- config --
 CC								:= gcc
 CXX								:= g++
-GAME							?= sample
+GAME							?= 2d-sample
 PROGRAM						:= $(GAME).out
 
 GAMES_DIR					:= examples
@@ -130,7 +130,7 @@ $(BIN_DIR)/%.o: %.cpp
 
 clean:
 	rm -rf $(BIN_DIR)
-	rm -f $(PROGRAM)
+	rm -f $(PROGRAM) *.out
 
 rebuild: clean all
 

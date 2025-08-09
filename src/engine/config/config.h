@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../c-lib/types.h"
-#include "../io/input.h"
+#include "input.h"
 
 typedef struct {
   u32 keybinds[INPUT_KEY_COUNT];
