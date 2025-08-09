@@ -36,7 +36,7 @@ static void input_handle(f32 dt) {
   f32 px = player.plane[0], py = player.plane[1];
 
   // forward/backward
-  if (state.input.states[INPUT_KEY_UP]) {
+  if (state.input.states[INPUT_KEY_W]) {
     if (world_map[(u32)(x + dx * move_step)][(u32)y] == 0) {
       player.pos[0] += dx * move_step;
     }
@@ -44,7 +44,7 @@ static void input_handle(f32 dt) {
       player.pos[1] += dy * move_step;
     }
   }
-  if (state.input.states[INPUT_KEY_DOWN] > 0) {
+  if (state.input.states[INPUT_KEY_S] > 0) {
     // Move backward if no wall behind
     if (world_map[(u32)(player.pos[0] - player.dir[0] * move_step)]
                  [(u32)player.pos[1]] == 0) {
@@ -57,7 +57,7 @@ static void input_handle(f32 dt) {
   }
 
   // strafing left and right using camera plane vec
-  if (state.input.states[INPUT_KEY_LEFT]) {
+  if (state.input.states[INPUT_KEY_A]) {
     if (world_map[(u32)(x - px * move_step)][(u32)y] == 0) {
       player.pos[0] -= px * move_step;
     }
@@ -65,7 +65,7 @@ static void input_handle(f32 dt) {
       player.pos[1] -= py * move_step;
     }
   }
-  if (state.input.states[INPUT_KEY_RIGHT]) {
+  if (state.input.states[INPUT_KEY_D]) {
     if (world_map[(u32)(x + px * move_step)][(u32)y] == 0) {
       player.pos[0] += px * move_step;
     }

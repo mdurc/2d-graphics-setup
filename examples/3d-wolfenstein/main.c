@@ -44,7 +44,7 @@ static void update_camera_direction(void) {
   front[0] = cos(RAD(yaw)) * cos(RAD(pitch));
   front[1] = sin(RAD(pitch));
   front[2] = sin(RAD(yaw)) * cos(RAD(pitch));
-  vec3_norm(camera.direction, front);
+  vec3_normalize(camera.direction, front);
 }
 
 static void input_handle(f32 dt) {
@@ -80,8 +80,8 @@ static void input_handle(f32 dt) {
 
   f32 camera_speed = 2.5f * dt;
   vec3 right;
-  vec3_mul_cross(right, camera.direction, camera.up);
-  vec3_norm(right, right);
+  vec3_cross(right, camera.direction, camera.up);
+  vec3_normalize(right, right);
 
   vec3 move_vector_xz = {0};
   if (state.input.states[INPUT_KEY_W]) {
@@ -101,7 +101,7 @@ static void input_handle(f32 dt) {
 
   // normalize and scale horizontal movement
   if (vec3_len(move_vector_xz) > 0) {
-    vec3_norm(move_vector_xz, move_vector_xz);
+    vec3_normalize(move_vector_xz, move_vector_xz);
     vec3_scale(move_vector_xz, move_vector_xz, camera_speed);
   }
 
@@ -136,18 +136,18 @@ static void render_3d(sprite_sheet_t* bg_sheet) {
   render_begin_3d(&camera);
   {
     mat4x4 floor_model;
-    mat4x4_identity(floor_model);
-    mat4x4_translate(floor_model, MAP_WIDTH / 2.0f, 0.0f, MAP_HEIGHT / 2.0f);
-    mat4x4_scale_aniso(floor_model, floor_model, MAP_WIDTH, 0.01f, MAP_HEIGHT);
-    render_cube(floor_model, &bg_sheet->texture_id);
+    mat4x4_identity(&floor_model);
+    mat4x4_translate(&floor_model, MAP_WIDTH / 2.0f, 0.0f, MAP_HEIGHT / 2.0f);
+    mat4x4_scale_aniso(&floor_model, MAP_WIDTH, 0.01f, MAP_HEIGHT);
+    render_cube(&floor_model, &bg_sheet->texture_id);
 
     for (u32 y = 0; y < MAP_HEIGHT; ++y) {
       for (u32 x = 0; x < MAP_WIDTH; ++x) {
         if (world_map[y * MAP_WIDTH + x] == 1) {
           mat4x4 model;
-          mat4x4_identity(model);
-          mat4x4_translate(model, (f32)x + 0.5f, 0.5f, (f32)y + 0.5f);
-          render_cube(model, &bg_sheet->texture_id);
+          mat4x4_identity(&model);
+          mat4x4_translate(&model, (f32)x + 0.5f, 0.5f, (f32)y + 0.5f);
+          render_cube(&model, &bg_sheet->texture_id);
         }
       }
     }

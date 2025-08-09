@@ -146,12 +146,12 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
   glUseProgram(shader_2d_default);
 
   mat4x4 model;
-  mat4x4_identity(model);
-  mat4x4_translate(model, pos[0], pos[1], 0);
-  mat4x4_scale_aniso(model, model, size[0], size[1], 1);
+  mat4x4_identity(&model);
+  mat4x4_translate(&model, pos[0], pos[1], 0);
+  mat4x4_scale_aniso(&model, size[0], size[1], 1);
 
   glUniformMatrix4fv(glGetUniformLocation(shader_2d_default, "model"), 1,
-                     GL_FALSE, &model[0][0]);
+                     GL_TRUE, &model.data[0]);
   glUniform4fv(glGetUniformLocation(shader_2d_default, "color"), 1, color);
 
   // the vao stores all of the vbo's linked to it
@@ -174,10 +174,10 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
   f32 line[6] = {0.0f, 0.0f, 0.0f, x, y, 0.0f};
 
   mat4x4 model;
-  mat4x4_identity(model);
-  mat4x4_translate(model, start[0], start[1], 0);
+  mat4x4_identity(&model);
+  mat4x4_translate(&model, start[0], start[1], 0);
   glUniformMatrix4fv(glGetUniformLocation(shader_2d_default, "model"), 1,
-                     GL_FALSE, &model[0][0]);
+                     GL_TRUE, &model.data[0]);
   glUniform4fv(glGetUniformLocation(shader_2d_default, "color"), 1, color);
 
   glBindTexture(GL_TEXTURE_2D, white_texture_id);
@@ -341,30 +341,30 @@ void render_begin_3d(camera_t* camera) {
 
   mat4x4 projection, view;
   // create projection matrix
-  mat4x4_perspective(projection, camera->fov_radians, camera->aspect_ratio,
+  mat4x4_perspective(&projection, camera->fov_radians, camera->aspect_ratio,
                      camera->near_plane, camera->far_plane);
 
   // create view matrix
   vec3 center;
   vec3_add(center, camera->position, camera->direction);
-  mat4x4_look_at(view, camera->position, center, camera->up);
+  mat4x4_look_at(&view, camera->position, center, camera->up);
 
   // set uniforms
   glUseProgram(shader_3d);
-  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "projection"), 1, GL_FALSE,
-                     &projection[0][0]);
-  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "view"), 1, GL_FALSE,
-                     &view[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "projection"), 1, GL_TRUE,
+                     &projection.data[0]);
+  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "view"), 1, GL_TRUE,
+                     &view.data[0]);
 }
 
-void render_cube(mat4x4 model, u32* texture_id) {
+void render_cube(mat4x4* model, u32* texture_id) {
   glUseProgram(shader_3d);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture_id ? *texture_id : white_texture_id);
 
-  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "model"), 1, GL_FALSE,
-                     &model[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(shader_3d, "model"), 1, GL_TRUE,
+                     &model->data[0]);
 
   glBindVertexArray(vao_cube);
   glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);

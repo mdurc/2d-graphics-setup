@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../c-lib/types.h"
-#include "linmath/linmath.h"
+#include "../math/math.h"
 
 typedef struct body body_t;
 typedef struct static_body static_body_t;

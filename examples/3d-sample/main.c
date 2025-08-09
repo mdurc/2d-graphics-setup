@@ -44,15 +44,15 @@ int main(void) {
     render_begin_3d(&camera);
     {
       mat4x4 model_matrix;
-      mat4x4_identity(model_matrix);
-      mat4x4_scale_aniso(model_matrix, model_matrix, 1.0f, 1.0f, 1.0f);
+      mat4x4_identity(&model_matrix);
+      mat4x4_scale_aniso(&model_matrix, 1.0f, 1.0f, 1.0f);
       float rotation_angle = (float)glfwGetTime();
-      mat4x4_rotate_Y(model_matrix, model_matrix, rotation_angle);
-      mat4x4_rotate_X(model_matrix, model_matrix, rotation_angle);
+      mat4x4_rotate_y(&model_matrix, rotation_angle);
+      mat4x4_rotate_x(&model_matrix, rotation_angle);
       vec3 cube_position = {0.75f, 0.0f, 0.0f};
-      mat4x4_translate_in_place(model_matrix, cube_position[0],
-                                cube_position[1], cube_position[2]);
-      render_cube(model_matrix);
+      mat4x4_translate(&model_matrix, cube_position[0], cube_position[1],
+                       cube_position[2]);
+      render_cube(&model_matrix, NULL);
     }
 
     render_begin_2d();

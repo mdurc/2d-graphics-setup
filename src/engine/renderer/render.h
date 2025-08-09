@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../c-lib/types.h"
-#include "linmath/linmath.h"
+#include "../math/math.h"
 
 typedef struct {
   vec3 position;  // camera position in world space
@@ -65,7 +65,7 @@ void render_sprite_sheet_frame(sprite_sheet_t* sprite_sheet, f32 row,
 // ---- 3d rendering pass ----
 // sets up the proj and view matrices from the camera and enables depth testing
 void render_begin_3d(camera_t* camera);
-void render_cube(mat4x4 model, u32* texture_id);
+void render_cube(mat4x4* model, u32* texture_id);
 
 // ---- for testing 2d triangles ----
 void render_test_setup(u32* out_shader, u32* out_vao, f32 scale);

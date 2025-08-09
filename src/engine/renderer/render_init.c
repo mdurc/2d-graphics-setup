@@ -2,8 +2,8 @@
 
 #include "../c-lib/misc.h"
 #include "../io/io.h"
+#include "../math/math.h"
 #include "../state.h"
-#include "linmath/linmath.h"
 #include "stb_image.h"
 
 #define GLFW_INCLUDE_NONE
@@ -128,21 +128,21 @@ void render_init_shaders(u32* out_shader_2d, u32* out_shader_2d_sprite_batch,
   // orthographic camera view to get the pixel size we want, and applying the
   // projection to the entire window.
   mat4x4 projection_2d;
-  mat4x4_ortho(projection_2d, 0, render_width, 0, render_height, -2, 2);
+  mat4x4_ortho(&projection_2d, 0, render_width, 0, render_height, -2, 2);
 
   glUseProgram(*out_shader_2d);
   glUniformMatrix4fv(glGetUniformLocation(*out_shader_2d, "projection"), 1,
-                     GL_FALSE, &projection_2d[0][0]);
+                     GL_TRUE, &projection_2d.data[0]);
 
   glUseProgram(*out_shader_2d_line_batch);
   glUniformMatrix4fv(
-      glGetUniformLocation(*out_shader_2d_line_batch, "projection"), 1,
-      GL_FALSE, &projection_2d[0][0]);
+      glGetUniformLocation(*out_shader_2d_line_batch, "projection"), 1, GL_TRUE,
+      &projection_2d.data[0]);
 
   glUseProgram(*out_shader_2d_sprite_batch);
   glUniformMatrix4fv(
       glGetUniformLocation(*out_shader_2d_sprite_batch, "projection"), 1,
-      GL_FALSE, &projection_2d[0][0]);
+      GL_TRUE, &projection_2d.data[0]);
   // the texture slot represents what texture is used for the active texture
   // (ie, GL_TEXTURE0, GL_TEXTURE1, etc).
   int slots[8] = {0, 1, 2, 3, 4, 5, 6, 7};

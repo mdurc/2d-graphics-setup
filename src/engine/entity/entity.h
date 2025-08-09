@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../c-lib/types.h"
+#include "../math/math.h"
 #include "../physics/physics.h"
-#include "linmath/linmath.h"
 
 typedef struct entity {
   size_t body_id;

@@ -1,8 +1,8 @@
 #include "font.h"
 
 #include "../c-lib/misc.h"
+#include "../math/math.h"
 #include "../renderer/render.h"
-#include "linmath/linmath.h"
 
 static iv2 find_char(char ch) {
   static const char* lines[] = {
