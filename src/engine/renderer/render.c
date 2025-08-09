@@ -357,12 +357,11 @@ void render_begin_3d(camera_t* camera) {
                      &view[0][0]);
 }
 
-void render_cube(mat4x4 model) {
+void render_cube(mat4x4 model, u32* texture_id) {
   glUseProgram(shader_3d);
 
-  // solid color rendering
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, white_texture_id);
+  glBindTexture(GL_TEXTURE_2D, texture_id ? *texture_id : white_texture_id);
 
   glUniformMatrix4fv(glGetUniformLocation(shader_3d, "model"), 1, GL_FALSE,
                      &model[0][0]);

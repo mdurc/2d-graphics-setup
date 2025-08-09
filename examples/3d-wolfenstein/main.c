@@ -132,14 +132,14 @@ static void input_handle(f32 dt) {
   }
 }
 
-static void render_3d(void) {
+static void render_3d(sprite_sheet_t* bg_sheet) {
   render_begin_3d(&camera);
   {
     mat4x4 floor_model;
     mat4x4_identity(floor_model);
     mat4x4_translate(floor_model, MAP_WIDTH / 2.0f, 0.0f, MAP_HEIGHT / 2.0f);
     mat4x4_scale_aniso(floor_model, floor_model, MAP_WIDTH, 0.01f, MAP_HEIGHT);
-    render_cube(floor_model);
+    render_cube(floor_model, &bg_sheet->texture_id);
 
     for (u32 y = 0; y < MAP_HEIGHT; ++y) {
       for (u32 x = 0; x < MAP_WIDTH; ++x) {
@@ -147,7 +147,7 @@ static void render_3d(void) {
           mat4x4 model;
           mat4x4_identity(model);
           mat4x4_translate(model, (f32)x + 0.5f, 0.5f, (f32)y + 0.5f);
-          render_cube(model);
+          render_cube(model, &bg_sheet->texture_id);
         }
       }
     }
@@ -182,6 +182,8 @@ int main(void) {
 
   sprite_sheet_t font_sheet;
   render_init_sprite_sheet(&font_sheet, "res/sample_font.png", 8, 8);
+  sprite_sheet_t bg_sheet;
+  render_init_sprite_sheet(&bg_sheet, "res/sample_bg.png", 8, 8);
 
   update_camera_direction();
 
@@ -191,7 +193,7 @@ int main(void) {
     input_handle(state.time.delta);
 
     render_begin();
-    render_3d();
+    render_3d(&bg_sheet);
     render_2d(&font_sheet);
     render_end();
     time_update_late();
