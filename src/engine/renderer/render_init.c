@@ -320,7 +320,8 @@ void render_init_sprite_sheet(sprite_sheet_t* sprite_sheet, const char* path,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   int width, height, channel_count;
-  u8* image_data = stbi_load(path, &width, &height, &channel_count, 0);
+  // force loading the image with 4 channels (RGBA)
+  u8* image_data = stbi_load(path, &width, &height, &channel_count, 4);
   ASSERT(image_data, "failed to load image from stb image: %s", path);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
                GL_UNSIGNED_BYTE, image_data);
