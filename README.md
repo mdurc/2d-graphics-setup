@@ -24,7 +24,7 @@ some directories:
   - both 2d and 3d examples here
 - c-lib/: utility libraries (dynamic list, logging, etc.)
 - shaders/: GLSL shader files
-- lib/: external libraries (GLAD, linmath, miniaudio)
+- lib/: external libraries (GLAD, miniaudio)
 - res/: game assets (sprite sheets)
 
 `make` to build
