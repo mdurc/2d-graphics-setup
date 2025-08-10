@@ -12,6 +12,7 @@ typedef enum {
   INPUT_KEY_A,
   INPUT_KEY_S,
   INPUT_KEY_D,
+  INPUT_KEY_SPACE,
 
   INPUT_KEY_COUNT,
 } input_key_t;

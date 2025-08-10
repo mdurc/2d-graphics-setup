@@ -26,6 +26,7 @@ static const keybind_info_t config_info[] = {
     {INPUT_KEY_A, "a", "A"},
     {INPUT_KEY_S, "s", "S"},
     {INPUT_KEY_D, "d", "D"},
+    {INPUT_KEY_SPACE, "jump", "Space"},
 };
 static const size_t glfw_keymap_size = sizeof(glfw_keymap) / sizeof(keymap_t);
 static const size_t config_size = sizeof(config_info) / sizeof(keybind_info_t);
